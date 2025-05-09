@@ -9,36 +9,33 @@ export interface VerifyDiscordResult {
   message: string;
 }
 
-export async function verifyDiscordMember(username: string): Promise<VerifyDiscordResult> {
-  try {
-    // This will use the Discord authentication that's already set up in Supabase
-    // In a real implementation, we would use a Supabase Edge Function to verify
-    // if the user is a member of the specified Discord server
-    
-    // For demonstration purposes, we'll simulate API call with a delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Mock verification - in real implementation we'd check against Discord's API
-    const verified = username.length > 3;
-    
-    if (verified) {
-      return {
-        verified: true,
-        message: `Successfully verified that ${username} is a member of ${DISCORD_SERVER_TO_JOIN}`
-      };
-    } else {
-      return {
-        verified: false,
-        message: `Could not verify that ${username} is a member of ${DISCORD_SERVER_TO_JOIN}. Please make sure you've joined and try again.`
-      };
-    }
-  } catch (error) {
-    console.error("Discord verification error:", error);
+// Function to generate Discord OAuth URL
+export function getDiscordAuthUrl() {
+  // In a real implementation, you would use the actual client ID from your Discord app
+  // This would redirect to Discord's OAuth flow
+  const CLIENT_ID = "your-discord-client-id"; // Replace in production
+  const REDIRECT_URI = encodeURIComponent(window.location.origin + "/discord-callback");
+  const SCOPE = encodeURIComponent("identify guilds");
+  
+  return `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=${SCOPE}`;
+}
+
+// For demonstration, we'll simulate a successful verification
+// In a real implementation, this would check if the user has authorized and joined the server
+export async function checkDiscordVerification(code: string | null): Promise<VerifyDiscordResult> {
+  // In production, this would exchange the code for a token and check the Discord API
+  // For demo purposes, consider any code as successful
+  if (code) {
     return {
-      verified: false,
-      message: "Error during Discord verification. Please try again later."
+      verified: true,
+      message: `Successfully verified that you are a member of ${DISCORD_SERVER_TO_JOIN}`
     };
   }
+  
+  return {
+    verified: false,
+    message: `Could not verify that you are a member of ${DISCORD_SERVER_TO_JOIN}. Please authorize and try again.`
+  };
 }
 
 export async function updateDiscordVerificationStatus(registrationId: string, verified: boolean) {

@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
+import DiscordCallback from "./pages/DiscordCallback";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/about" element={<About />} />
+              <Route path="/discord-callback" element={<DiscordCallback />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

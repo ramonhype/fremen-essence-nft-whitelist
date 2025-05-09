@@ -43,7 +43,17 @@ const WhitelistEntries = () => {
           
         if (error) throw error;
         
-        setEntries(data || []);
+        // Convert the data to match our WhitelistEntry interface
+        const formattedEntries = data?.map(entry => ({
+          id: entry.id,
+          name: entry.name,
+          wallet_address: entry.wallet_address,
+          discord_username: entry.discord_username || "Verified via OAuth",
+          discord_verified: !!entry.discord_verified,
+          created_at: entry.created_at
+        })) || [];
+        
+        setEntries(formattedEntries);
       } catch (err) {
         console.error("Error fetching whitelist entries:", err);
         setError("Failed to load whitelist entries");

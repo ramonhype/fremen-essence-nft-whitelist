@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { toast } from "@/hooks/use-toast";
 import { 
@@ -13,21 +13,58 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Wallet, MessageSquare, CheckCircle2, Circle, Loader2 } from 'lucide-react';
+import { Wallet, MessagesSquare, CheckCircle2, Circle, Loader2 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
-import { verifyDiscordMember, DISCORD_SERVER_TO_JOIN } from "@/utils/discordVerification";
+import { 
+  getDiscordAuthUrl, 
+  checkDiscordVerification, 
+  DISCORD_SERVER_TO_JOIN,
+  updateDiscordVerificationStatus
+} from "@/utils/discordVerification";
 
 const RegistrationForm = () => {
   const { address, isConnected } = useAccount();
   const [name, setName] = useState('');
-  const [discord, setDiscord] = useState('');
   const [password, setPassword] = useState('');
   const [isPasswordValid, setIsPasswordValid] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isVerifyingDiscord, setIsVerifyingDiscord] = useState(false);
   const [isDiscordVerified, setIsDiscordVerified] = useState(false);
   const [registrationId, setRegistrationId] = useState<string | null>(null);
   
+  // Check for Discord verification code on page load
+  useEffect(() => {
+    const checkDiscordAuth = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      
+      if (code) {
+        // Remove code from URL to prevent multiple verification attempts
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        const { verified, message } = await checkDiscordVerification(code);
+        setIsDiscordVerified(verified);
+        
+        toast({
+          title: verified ? "Success" : "Verification Failed",
+          description: message,
+          variant: verified ? "default" : "destructive",
+        });
+        
+        // If there's a registration ID and verification was successful, update it
+        if (registrationId && verified) {
+          await updateDiscordVerificationStatus(registrationId, true);
+        }
+      }
+    };
+    
+    checkDiscordAuth();
+  }, [registrationId]);
+  
+  const handleDiscordVerification = () => {
+    // Redirect to Discord OAuth
+    window.location.href = getDiscordAuthUrl();
+  };
+
   const handlePasswordCheck = async () => {
     setIsLoading(true);
     
@@ -70,48 +107,6 @@ const RegistrationForm = () => {
     }
   };
 
-  const handleDiscordVerification = async () => {
-    if (!discord) {
-      toast({
-        title: "Error",
-        description: "Please enter your Discord username",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsVerifyingDiscord(true);
-    
-    try {
-      const { verified, message } = await verifyDiscordMember(discord);
-      
-      setIsDiscordVerified(verified);
-      
-      toast({
-        title: verified ? "Success" : "Verification Failed",
-        description: message,
-        variant: verified ? "default" : "destructive",
-      });
-      
-      // If already registered, update the verification status
-      if (registrationId) {
-        await supabase
-          .from('whitelist_registrations')
-          .update({ discord_verified: verified })
-          .eq('id', registrationId);
-      }
-    } catch (error) {
-      console.error('Error verifying Discord:', error);
-      toast({
-        title: "Error",
-        description: "Failed to verify Discord membership status",
-        variant: "destructive",
-      });
-    } finally {
-      setIsVerifyingDiscord(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isConnected) {
@@ -150,7 +145,7 @@ const RegistrationForm = () => {
         .insert({
           wallet_address: address,
           name,
-          discord_username: discord,
+          discord_username: "", // Empty string as we're using OAuth
           discord_verified: isDiscordVerified,
           password_id: passwordData.id
         })
@@ -218,54 +213,30 @@ const RegistrationForm = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="discord" className="flex items-center space-x-2">
-                <span>Discord Username</span>
+              <Label className="flex items-center space-x-2">
+                <span>Discord Verification</span>
                 <span className="text-xs text-muted-foreground">
                   (Must be a member of {DISCORD_SERVER_TO_JOIN})
                 </span>
               </Label>
-              <div className="flex gap-2">
-                <Input
-                  id="discord"
-                  value={discord}
-                  onChange={(e) => {
-                    setDiscord(e.target.value);
-                    setIsDiscordVerified(false); // Reset verification on change
-                  }}
-                  className="border-nft-border bg-nft-muted focus:border-nft-primary"
-                  placeholder="username#0000"
-                  required
-                />
+              
+              {isDiscordVerified ? (
+                <div className="flex items-center p-3 rounded-md border border-green-500 bg-green-50 dark:bg-green-900/20">
+                  <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
+                  <span className="text-green-700 dark:text-green-300">
+                    Discord successfully verified
+                  </span>
+                </div>
+              ) : (
                 <Button 
                   type="button" 
                   variant="secondary" 
                   onClick={handleDiscordVerification}
-                  disabled={!discord || isVerifyingDiscord}
-                  className="flex items-center gap-2"
+                  className="w-full flex items-center justify-center gap-2"
                 >
-                  {isVerifyingDiscord ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Verifying</span>
-                    </>
-                  ) : isDiscordVerified ? (
-                    <>
-                      <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      <span>Verified</span>
-                    </>
-                  ) : (
-                    <>
-                      <MessageSquare className="h-4 w-4" />
-                      <span>Verify</span>
-                    </>
-                  )}
+                  <MessagesSquare className="h-4 w-4" />
+                  <span>Verify with Discord</span>
                 </Button>
-              </div>
-              {isDiscordVerified && (
-                <p className="text-xs text-green-500 flex items-center gap-1">
-                  <CheckCircle2 className="h-3 w-3" />
-                  Discord membership verified
-                </p>
               )}
             </div>
 
@@ -305,7 +276,7 @@ const RegistrationForm = () => {
             <Button 
               type="submit" 
               className="w-full bg-nft-primary hover:bg-nft-secondary transition-colors"
-              disabled={!isConnected || !isPasswordValid || !name || !discord || isLoading || !isDiscordVerified}
+              disabled={!isConnected || !isPasswordValid || !name || isLoading || !isDiscordVerified}
             >
               {isLoading ? "Submitting..." : "Register for Whitelist"}
             </Button>
