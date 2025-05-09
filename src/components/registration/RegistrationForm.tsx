@@ -95,14 +95,25 @@ const RegistrationForm = () => {
     setIsLoading(true);
     
     try {
-      // Get password ID
-      const { data: passwordData } = await supabase
+      // Get password ID and check max_uses again as a safety measure
+      const { data: passwordData, error: passwordError } = await supabase
         .from('community_passwords')
-        .select('id')
+        .select('id, max_uses, current_uses')
         .eq('password', password)
         .single();
       
-      if (!passwordData) throw new Error("Password not found");
+      if (passwordError || !passwordData) throw new Error("Password not found");
+      
+      // Double-check if usage limit has been reached
+      if (passwordData.max_uses !== null && passwordData.current_uses >= passwordData.max_uses) {
+        toast({
+          title: "Registration Failed",
+          description: "This password has reached its maximum usage limit",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
       
       // Insert registration data - now explicitly setting name to null
       const { data, error } = await supabase
@@ -128,6 +139,12 @@ const RegistrationForm = () => {
           throw error;
         }
       } else {
+        // Increment the current_uses counter
+        await supabase
+          .from('community_passwords')
+          .update({ current_uses: passwordData.current_uses + 1 })
+          .eq('id', passwordData.id);
+        
         setRegistrationId(data.id);
         toast({
           title: "Registration Successful",

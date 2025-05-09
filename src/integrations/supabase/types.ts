@@ -29,21 +29,27 @@ export type Database = {
           active: boolean
           community_name: string
           created_at: string
+          current_uses: number | null
           id: string
+          max_uses: number | null
           password: string
         }
         Insert: {
           active?: boolean
           community_name: string
           created_at?: string
+          current_uses?: number | null
           id?: string
+          max_uses?: number | null
           password: string
         }
         Update: {
           active?: boolean
           community_name?: string
           created_at?: string
+          current_uses?: number | null
           id?: string
+          max_uses?: number | null
           password?: string
         }
         Relationships: []

@@ -27,12 +27,15 @@ interface Password {
   password: string;
   community_name: string;
   created_at: string;
+  max_uses: number | null;
+  current_uses: number | null;
 }
 
 const PasswordManager = () => {
   const [passwords, setPasswords] = useState<Password[]>([]);
   const [newPassword, setNewPassword] = useState('');
   const [newCommunity, setNewCommunity] = useState('');
+  const [maxUses, setMaxUses] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingPasswords, setIsLoadingPasswords] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,11 +68,26 @@ const PasswordManager = () => {
     setIsLoading(true);
 
     try {
+      // Convert maxUses to number or null if empty
+      const parsedMaxUses = maxUses.trim() !== '' ? parseInt(maxUses, 10) : null;
+      
+      if (maxUses.trim() !== '' && isNaN(parsedMaxUses as number)) {
+        toast({
+          title: "Invalid Input",
+          description: "Maximum uses must be a valid number",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('community_passwords')
         .insert({
           password: newPassword,
-          community_name: newCommunity
+          community_name: newCommunity,
+          max_uses: parsedMaxUses,
+          current_uses: 0
         })
         .select()
         .single();
@@ -79,6 +97,7 @@ const PasswordManager = () => {
       setPasswords([data, ...passwords]);
       setNewPassword('');
       setNewCommunity('');
+      setMaxUses('');
       
       toast({
         title: "Password Created",
@@ -135,7 +154,7 @@ const PasswordManager = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleCreatePassword}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="community">Community Name</Label>
                 <Input
@@ -155,6 +174,18 @@ const PasswordManager = () => {
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="Enter secure password"
                   required
+                  className="border-nft-border bg-nft-muted focus:border-nft-primary"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="maxUses">Max Uses (Optional)</Label>
+                <Input
+                  id="maxUses"
+                  type="number"
+                  min="1"
+                  value={maxUses}
+                  onChange={(e) => setMaxUses(e.target.value)}
+                  placeholder="Leave empty for unlimited"
                   className="border-nft-border bg-nft-muted focus:border-nft-primary"
                 />
               </div>
@@ -194,9 +225,10 @@ const PasswordManager = () => {
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-nft-muted/50">
-                    <TableHead className="w-1/3">Community</TableHead>
-                    <TableHead className="w-1/3">Password</TableHead>
-                    <TableHead className="w-1/4">Created</TableHead>
+                    <TableHead className="w-1/4">Community</TableHead>
+                    <TableHead className="w-1/4">Password</TableHead>
+                    <TableHead className="w-1/6">Created</TableHead>
+                    <TableHead className="w-1/6">Usage</TableHead>
                     <TableHead className="w-1/12 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -206,6 +238,11 @@ const PasswordManager = () => {
                       <TableCell className="font-medium">{entry.community_name}</TableCell>
                       <TableCell className="font-mono">{entry.password}</TableCell>
                       <TableCell>{formatDate(entry.created_at)}</TableCell>
+                      <TableCell>
+                        {entry.current_uses || 0}
+                        {entry.max_uses !== null && ` / ${entry.max_uses}`}
+                        {entry.max_uses === null && ' (∞)'}
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="ghost"
@@ -219,7 +256,7 @@ const PasswordManager = () => {
                   ))}
                   {passwords.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                      <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
                         No passwords created yet
                       </TableCell>
                     </TableRow>

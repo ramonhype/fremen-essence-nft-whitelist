@@ -20,17 +20,20 @@ const PasswordVerification = ({ onPasswordVerified }: PasswordVerificationProps)
     setIsLoading(true);
     
     try {
-      // Check password against Supabase
+      // Check password against Supabase with additional check for max_uses
       const { data, error } = await supabase
         .from('community_passwords')
-        .select('id')
+        .select('id, max_uses, current_uses')
         .eq('password', password)
         .eq('active', true)
         .single();
       
       if (error) throw error;
       
-      const isValid = !!data;
+      // Check if password usage limit has been reached
+      const hasReachedLimit = data.max_uses !== null && data.current_uses >= data.max_uses;
+      
+      const isValid = !!data && !hasReachedLimit;
       setIsPasswordValid(isValid);
       onPasswordVerified(isValid, password);
       
@@ -38,6 +41,12 @@ const PasswordVerification = ({ onPasswordVerified }: PasswordVerificationProps)
         toast({
           title: "Success",
           description: "Password verified successfully",
+        });
+      } else if (hasReachedLimit) {
+        toast({
+          title: "Error",
+          description: "This password has reached its maximum usage limit",
+          variant: "destructive",
         });
       } else {
         toast({
