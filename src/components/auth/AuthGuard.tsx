@@ -9,6 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
+// Admin credentials
+const ADMIN_EMAIL = 'ramon@hype.partners';
+const ADMIN_PASSWORD = '123456789';
+
 interface AuthGuardProps {
   children: React.ReactNode;
 }
@@ -21,16 +25,9 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
   
   // Check if user is already authenticated on component mount
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data } = await supabase.auth.getSession();
-      
-      if (data.session) {
-        localStorage.setItem('isAuthenticated', 'true');
-        setIsAuthenticated(true);
-      } else {
-        localStorage.removeItem('isAuthenticated');
-        setIsAuthenticated(false);
-      }
+    const checkAuth = () => {
+      const authStatus = localStorage.getItem('isAuthenticated') === 'true';
+      setIsAuthenticated(authStatus);
     };
     
     checkAuth();
@@ -41,17 +38,8 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
     setIsLoading(true);
     
     try {
-      // For demonstration, we're hardcoding the credentials
-      // In a real application, you would validate against Supabase Auth
-      if (email === 'ramon@hype.partners' && password === '123456789') {
-        // Sign in with Supabase
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        
-        if (error) throw error;
-        
+      // Simple authentication check with hardcoded credentials
+      if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
         localStorage.setItem('isAuthenticated', 'true');
         setIsAuthenticated(true);
         
