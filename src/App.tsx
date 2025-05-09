@@ -1,12 +1,12 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { chains, RainbowKitProvider, WagmiConfig, darkTheme, wagmiConfig } from "@/lib/rainbowkit";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
@@ -20,28 +20,50 @@ const queryClient = new QueryClient();
 
 // Handle Auth callback
 const AuthCallback = () => {
+  const [isProcessing, setIsProcessing] = useState(true);
+
   useEffect(() => {
-    // The hash fragment contains auth info from Supabase OAuth
     const handleAuthCallback = async () => {
-      const hashParams = new URLSearchParams(
-        window.location.hash.substring(1) // remove the # character
-      );
-      
-      if (hashParams.has('access_token')) {
-        // Refresh the session to ensure Supabase client has the latest auth state
-        await supabase.auth.getSession();
-      }
-      
-      // Remove the hash to clean up the URL
-      if (window.location.hash) {
-        window.history.replaceState({}, document.title, window.location.pathname);
+      try {
+        // Get the current session state
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Auth callback error:", error);
+          toast({
+            title: "Authentication Error",
+            description: "There was a problem verifying your Discord account",
+            variant: "destructive",
+          });
+        } else if (session) {
+          // Session established successfully
+          toast({
+            title: "Authentication Successful",
+            description: "Your Discord account has been verified",
+          });
+        }
+      } catch (err) {
+        console.error("Error processing auth callback:", err);
+      } finally {
+        setIsProcessing(false);
       }
     };
     
     handleAuthCallback();
   }, []);
   
-  // Redirect to home page
+  if (isProcessing) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Verifying your Discord login...</h2>
+          <p className="text-muted-foreground">Please wait while we complete the authentication.</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Redirect to home page after processing
   return <Navigate to="/" replace />;
 };
 

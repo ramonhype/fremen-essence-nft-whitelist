@@ -1,10 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { MessagesSquare, CheckCircle2, Loader2 } from 'lucide-react';
-import { DISCORD_SERVER_TO_JOIN, signInWithDiscord } from "@/utils/discordVerification";
+import { DISCORD_SERVER_TO_JOIN, signInWithDiscord, checkDiscordVerification } from "@/utils/discordVerification";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DiscordVerificationProps {
   isVerified: boolean;
@@ -13,6 +14,41 @@ interface DiscordVerificationProps {
 
 const DiscordVerification = ({ isVerified, onVerificationChange }: DiscordVerificationProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(true);
+  
+  // Check verification status on mount and auth state changes
+  useEffect(() => {
+    const checkStatus = async () => {
+      setCheckingStatus(true);
+      try {
+        const { verified } = await checkDiscordVerification();
+        if (onVerificationChange) {
+          onVerificationChange(verified);
+        }
+      } catch (err) {
+        console.error("Error checking Discord verification:", err);
+      } finally {
+        setCheckingStatus(false);
+      }
+    };
+    
+    checkStatus();
+    
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        checkStatus();
+      } else if (event === 'SIGNED_OUT') {
+        if (onVerificationChange) {
+          onVerificationChange(false);
+        }
+      }
+    });
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [onVerificationChange]);
   
   const handleDiscordVerification = async () => {
     try {
@@ -37,6 +73,20 @@ const DiscordVerification = ({ isVerified, onVerificationChange }: DiscordVerifi
       setIsLoading(false);
     }
   };
+  
+  if (checkingStatus) {
+    return (
+      <div className="space-y-2">
+        <Label className="flex items-center space-x-2">
+          <span>Discord Verification</span>
+        </Label>
+        <div className="flex items-center p-3 rounded-md border border-muted bg-muted/20">
+          <Loader2 className="h-5 w-5 text-muted-foreground animate-spin mr-2" />
+          <span className="text-muted-foreground">Checking verification status...</span>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-2">
