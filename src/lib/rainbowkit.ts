@@ -34,7 +34,7 @@ const connectors = connectorsForWallets([
   {
     groupName: 'Recommended',
     wallets: [
-      rabbyWallet({ chains, projectId }),
+      rabbyWallet({ chains }),
       metaMaskWallet({ chains, projectId }),
       coinbaseWallet({ chains, appName: 'NFT Whitelist Portal' }),
       walletConnectWallet({ chains, projectId }),
