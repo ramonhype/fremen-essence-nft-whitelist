@@ -146,14 +146,15 @@ const RegistrationForm = () => {
       
       if (!passwordData) throw new Error("Password not found");
       
-      // Insert registration data
+      // Insert registration data - now explicitly setting name to null
       const { data, error } = await supabase
         .from('whitelist_registrations')
         .insert({
           wallet_address: address,
           discord_username: "", // Empty string as we're using OAuth
           discord_verified: isDiscordVerified,
-          password_id: passwordData.id
+          password_id: passwordData.id,
+          name: null // Explicitly set name to null since we've made it nullable
         })
         .select('id')
         .single();
