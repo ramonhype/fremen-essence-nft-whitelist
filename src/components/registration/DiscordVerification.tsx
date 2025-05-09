@@ -21,7 +21,10 @@ const DiscordVerification = ({ isVerified, onVerificationChange }: DiscordVerifi
     const checkStatus = async () => {
       setCheckingStatus(true);
       try {
+        console.log("Checking Discord verification status");
         const { verified } = await checkDiscordVerification();
+        console.log("Discord verification status:", verified);
+        
         if (onVerificationChange) {
           onVerificationChange(verified);
         }
@@ -35,9 +38,23 @@ const DiscordVerification = ({ isVerified, onVerificationChange }: DiscordVerifi
     checkStatus();
     
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event);
+      
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        checkStatus();
+        // Use setTimeout to avoid Supabase auth deadlock
+        setTimeout(async () => {
+          try {
+            const { verified } = await checkDiscordVerification();
+            console.log("After signin verification status:", verified);
+            
+            if (onVerificationChange) {
+              onVerificationChange(verified);
+            }
+          } catch (err) {
+            console.error("Error checking Discord verification after auth change:", err);
+          }
+        }, 0);
       } else if (event === 'SIGNED_OUT') {
         if (onVerificationChange) {
           onVerificationChange(false);
@@ -53,9 +70,15 @@ const DiscordVerification = ({ isVerified, onVerificationChange }: DiscordVerifi
   const handleDiscordVerification = async () => {
     try {
       setIsLoading(true);
+      console.log("Starting Discord verification");
+      
+      // Log current URL for debugging
+      console.log("Current origin:", window.location.origin);
+      
       const { error } = await signInWithDiscord();
       
       if (error) {
+        console.error("Discord sign-in error:", error);
         toast({
           title: "Verification Failed",
           description: error.message,

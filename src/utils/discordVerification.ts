@@ -11,8 +11,13 @@ export interface VerifyDiscordResult {
 
 // Function to initiate Discord OAuth via Supabase
 export async function signInWithDiscord() {
-  // Set the correct redirect URL
-  const redirectTo = `${window.location.origin}/auth/callback`;
+  // Get the current URL origin (works in both development and production)
+  const origin = window.location.origin;
+  
+  // Set the correct redirect URL using the actual origin
+  const redirectTo = `${origin}/auth/callback`;
+  
+  console.log('Discord redirect URL:', redirectTo);
   
   return await supabase.auth.signInWithOAuth({
     provider: 'discord',
