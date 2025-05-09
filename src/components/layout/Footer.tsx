@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Twitter, Home, Discord } from 'lucide-react';
+import { Twitter, Home, MessageSquare } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 const Footer = () => {
@@ -42,7 +42,7 @@ const Footer = () => {
               rel="noopener noreferrer"
               className="text-sm text-white/80 hover:text-[#4F9AF4] transition-colors flex items-center gap-1"
             >
-              <Discord size={16} />
+              <MessageSquare size={16} />
               <span>Discord</span>
             </a>
             
