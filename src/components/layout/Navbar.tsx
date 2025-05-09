@@ -2,12 +2,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
-  const navigate = useNavigate();
-  
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-nft-border bg-nft-background/80 backdrop-blur-md">
       <div className="container flex h-16 items-center justify-between">
@@ -30,13 +26,6 @@ const Navbar = () => {
           </nav>
         </div>
         <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            className="hidden md:flex hover:bg-nft-muted hover:text-nft-primary"
-            onClick={() => navigate('/admin')}
-          >
-            Admin
-          </Button>
           <ConnectButton />
         </div>
       </div>

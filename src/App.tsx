@@ -8,9 +8,11 @@ import { chains, RainbowKitProvider, WagmiConfig, darkTheme, wagmiConfig } from 
 
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
+import Auth from "./components/auth/Auth";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 import DiscordCallback from "./pages/DiscordCallback";
+import AuthGuard from "./components/auth/AuthGuard";
 
 const queryClient = new QueryClient();
 
@@ -32,7 +34,12 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/admin" element={<Admin />} />
+              <Route path="/login" element={<Auth />} />
+              <Route path="/admin" element={
+                <AuthGuard>
+                  <Admin />
+                </AuthGuard>
+              } />
               <Route path="/about" element={<About />} />
               <Route path="/discord-callback" element={<DiscordCallback />} />
               <Route path="*" element={<NotFound />} />
