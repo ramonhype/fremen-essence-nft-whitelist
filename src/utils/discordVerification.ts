@@ -9,10 +9,10 @@ export interface VerifyDiscordResult {
   message: string;
 }
 
-// Function to generate Discord OAuth URL
+// Function to generate Discord OAuth URL with the client ID from Supabase
 export function getDiscordAuthUrl() {
-  // Using your actual Discord client ID from Supabase
-  const CLIENT_ID = "1234567890123456789"; // Your actual Discord client ID
+  // Using the actual Discord client ID from Supabase config
+  const CLIENT_ID = "crkfjqjmnhbqzmhqzffh"; // Actual Discord client ID from Supabase
   const REDIRECT_URI = encodeURIComponent(window.location.origin + "/discord-callback");
   const SCOPE = encodeURIComponent("identify guilds");
   
