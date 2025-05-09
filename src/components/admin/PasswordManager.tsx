@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import CreatePasswordForm from './CreatePasswordForm';
 import PasswordsList from './PasswordsList';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
+import { AlertTriangle } from 'lucide-react';
 
 interface Password {
   id: string;
@@ -79,7 +79,7 @@ const PasswordManager = () => {
     <div className="space-y-8">
       {globalError && (
         <Alert variant="destructive" className="mb-6">
-          <ExclamationTriangleIcon className="h-4 w-4" />
+          <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>{globalError}</AlertDescription>
         </Alert>
