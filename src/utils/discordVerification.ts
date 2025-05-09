@@ -9,31 +9,31 @@ export interface VerifyDiscordResult {
   message: string;
 }
 
-// Function to generate Discord OAuth URL with the client ID from Supabase
-export function getDiscordAuthUrl() {
-  // Using the correct Discord client ID
-  const CLIENT_ID = "1370368561876570192"; // Correct Discord client ID
-  const REDIRECT_URI = encodeURIComponent("https://crkfjqjmnhbqzmhqzffh.supabase.co/auth/v1/callback");
-  const SCOPE = encodeURIComponent("identify guilds");
-  
-  return `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=${SCOPE}`;
+// Function to initiate Discord OAuth via Supabase
+export async function signInWithDiscord() {
+  return await supabase.auth.signInWithOAuth({
+    provider: 'discord',
+    options: {
+      redirectTo: window.location.origin,
+      scopes: 'identify guilds',
+    }
+  });
 }
 
-// For demonstration, we'll simulate a successful verification
-// In a real implementation, this would check if the user has authorized and joined the server
-export async function checkDiscordVerification(code: string | null): Promise<VerifyDiscordResult> {
-  // In production, this would exchange the code for a token and check the Discord API
-  // For demo purposes, consider any code as successful
-  if (code) {
+// Check if user has a valid Discord session in Supabase
+export async function checkDiscordVerification(): Promise<VerifyDiscordResult> {
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  if (session?.provider_token) {
     return {
       verified: true,
-      message: `Successfully verified that you are a member of ${DISCORD_SERVER_TO_JOIN}`
+      message: `Successfully verified that you are a Discord user`
     };
   }
   
   return {
     verified: false,
-    message: `Could not verify that you are a member of ${DISCORD_SERVER_TO_JOIN}. Please authorize and try again.`
+    message: `Please verify with Discord to continue.`
   };
 }
 

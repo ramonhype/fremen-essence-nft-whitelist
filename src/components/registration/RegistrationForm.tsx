@@ -12,10 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  checkDiscordVerification,
-  updateDiscordVerificationStatus
-} from "@/utils/discordVerification";
+import { checkDiscordVerification, updateDiscordVerificationStatus } from "@/utils/discordVerification";
 
 import WalletDisplay from './WalletDisplay';
 import DiscordVerification from './DiscordVerification';
@@ -29,33 +26,65 @@ const RegistrationForm = () => {
   const [isDiscordVerified, setIsDiscordVerified] = useState(false);
   const [registrationId, setRegistrationId] = useState<string | null>(null);
   
-  // Check for Discord verification code on page load
+  // Check for Discord verification on mount and auth state changes
   useEffect(() => {
-    const checkDiscordAuth = async () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get('code');
-      
-      if (code) {
-        // Remove code from URL to prevent multiple verification attempts
-        window.history.replaceState({}, document.title, window.location.pathname);
+    const checkAuthAndDiscord = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
         
-        const { verified, message } = await checkDiscordVerification(code);
-        setIsDiscordVerified(verified);
-        
-        toast({
-          title: verified ? "Success" : "Verification Failed",
-          description: message,
-          variant: verified ? "default" : "destructive",
-        });
-        
-        // If there's a registration ID and verification was successful, update it
-        if (registrationId && verified) {
-          await updateDiscordVerificationStatus(registrationId, true);
+        if (session?.provider_token) {
+          const { verified } = await checkDiscordVerification();
+          setIsDiscordVerified(verified);
+          
+          // If there's a registration ID and verification was successful, update it
+          if (registrationId && verified) {
+            await updateDiscordVerificationStatus(registrationId, true);
+          }
+          
+          if (verified) {
+            toast({
+              title: "Success",
+              description: "Discord successfully verified",
+            });
+          }
         }
+      } catch (error) {
+        console.error("Error checking Discord verification:", error);
       }
     };
     
-    checkDiscordAuth();
+    checkAuthAndDiscord();
+    
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session?.provider_token) {
+          // Use setTimeout to avoid Supabase auth deadlock
+          setTimeout(async () => {
+            const { verified } = await checkDiscordVerification();
+            setIsDiscordVerified(verified);
+            
+            if (verified) {
+              toast({
+                title: "Success",
+                description: "Discord successfully verified",
+              });
+              
+              // If there's a registration ID, update it
+              if (registrationId) {
+                await updateDiscordVerificationStatus(registrationId, true);
+              }
+            }
+          }, 0);
+        } else if (event === 'SIGNED_OUT') {
+          setIsDiscordVerified(false);
+        }
+      }
+    );
+    
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [registrationId]);
   
   const handlePasswordVerification = (isValid: boolean, verifiedPassword: string) => {
@@ -178,7 +207,8 @@ const RegistrationForm = () => {
             />
 
             <DiscordVerification 
-              isVerified={isDiscordVerified} 
+              isVerified={isDiscordVerified}
+              onVerificationChange={setIsDiscordVerified}
             />
 
             <PasswordVerification 
