@@ -13,7 +13,7 @@ export interface VerifyDiscordResult {
 export function getDiscordAuthUrl() {
   // Using the correct Discord client ID
   const CLIENT_ID = "1370368561876570192"; // Correct Discord client ID
-  const REDIRECT_URI = encodeURIComponent(window.location.origin + "/discord-callback");
+  const REDIRECT_URI = encodeURIComponent("https://crkfjqjmnhbqzmhqzffh.supabase.co/auth/v1/callback");
   const SCOPE = encodeURIComponent("identify guilds");
   
   return `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=${SCOPE}`;
