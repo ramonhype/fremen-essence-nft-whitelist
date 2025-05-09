@@ -11,9 +11,8 @@ export interface VerifyDiscordResult {
 
 // Function to generate Discord OAuth URL
 export function getDiscordAuthUrl() {
-  // In a real implementation, you would use the actual client ID from your Discord app
-  // This would redirect to Discord's OAuth flow
-  const CLIENT_ID = "your-discord-client-id"; // Replace in production
+  // Using the actual Discord client ID
+  const CLIENT_ID = "1234567890123456789"; // Replace this with your actual Discord Client ID from Supabase
   const REDIRECT_URI = encodeURIComponent(window.location.origin + "/discord-callback");
   const SCOPE = encodeURIComponent("identify guilds");
   
