@@ -5,7 +5,15 @@ import {
   RainbowKitProvider,
   lightTheme,
   darkTheme,
+  connectorsForWallets,
 } from '@rainbow-me/rainbowkit';
+import {
+  metaMaskWallet,
+  coinbaseWallet,
+  walletConnectWallet,
+  injectedWallet,
+  rabbyWallet,
+} from '@rainbow-me/rainbowkit/wallets';
 import { configureChains, createConfig, WagmiConfig } from 'wagmi';
 import {
   mainnet,
@@ -20,11 +28,20 @@ const { chains, publicClient } = configureChains(
   [publicProvider()]
 );
 
-const { connectors } = getDefaultWallets({
-  appName: 'NFT Whitelist Portal',
-  projectId: 'YOUR_PROJECT_ID', // You'll need to replace this with your own WalletConnect project ID
-  chains
-});
+const projectId = 'YOUR_PROJECT_ID'; // Replace with your WalletConnect project ID
+
+const connectors = connectorsForWallets([
+  {
+    groupName: 'Recommended',
+    wallets: [
+      rabbyWallet({ chains, projectId }),
+      metaMaskWallet({ chains, projectId }),
+      coinbaseWallet({ chains, appName: 'NFT Whitelist Portal' }),
+      walletConnectWallet({ chains, projectId }),
+      injectedWallet({ chains }),
+    ],
+  },
+]);
 
 export const wagmiConfig = createConfig({
   autoConnect: true,

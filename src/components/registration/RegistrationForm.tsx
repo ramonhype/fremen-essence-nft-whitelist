@@ -164,10 +164,10 @@ const RegistrationForm = () => {
   };
 
   return (
-    <Card className="w-full max-w-md border-nft-border bg-nft-background/60 backdrop-blur-md">
+    <Card className="w-full max-w-md border-nft-border bg-nft-background/60 backdrop-blur-md text-white">
       <CardHeader>
-        <CardTitle className="text-2xl">Whitelist Registration</CardTitle>
-        <CardDescription>Register your wallet for our upcoming NFT mint</CardDescription>
+        <CardTitle className="text-2xl text-white">Whitelist Registration</CardTitle>
+        <CardDescription className="text-white/80">Register your wallet for our upcoming NFT mint</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit}>
@@ -189,7 +189,7 @@ const RegistrationForm = () => {
           <div className="mt-6">
             <Button 
               type="submit" 
-              className="w-full bg-nft-primary hover:bg-nft-secondary transition-colors"
+              className="w-full bg-[#4F9AF4] hover:bg-[#4F9AF4]/80 text-white transition-colors"
               disabled={!isConnected || !isPasswordValid || isLoading || !isDiscordVerified}
             >
               {isLoading ? (

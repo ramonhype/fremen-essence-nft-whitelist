@@ -22,6 +22,7 @@ const Index = () => {
               </h1>
               <p className="mt-4 text-lg text-white/80">
                 Register your wallet to join the whitelist for the Fremen Essence NFT.
+                <br /><br />
                 Participate in the Spice Harvest campaign to invest in AI onchain and the launch of AID, the first AI synthetic dollar, by GAIB.
               </p>
             </div>
