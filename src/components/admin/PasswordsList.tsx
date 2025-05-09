@@ -19,6 +19,17 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { Trash, Loader2 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Password {
   id: string;
@@ -34,23 +45,34 @@ interface PasswordsListProps {
   isLoading: boolean;
   error: string | null;
   onPasswordDeleted: (id: string) => void;
+  onError: (errorMessage: string) => void;
 }
 
 const PasswordsList = ({ 
   passwords, 
   isLoading, 
   error,
-  onPasswordDeleted 
+  onPasswordDeleted,
+  onError
 }: PasswordsListProps) => {
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   
   const handleDeletePassword = async (id: string) => {
     try {
-      const { error } = await supabase
+      setDeletingId(id);
+      
+      // Check if we have an authenticated session first
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session) {
+        throw new Error("You must be logged in to delete passwords");
+      }
+      
+      const { error: deleteError } = await supabase
         .from('community_passwords')
         .delete()
         .eq('id', id);
         
-      if (error) throw error;
+      if (deleteError) throw deleteError;
       
       onPasswordDeleted(id);
       
@@ -60,11 +82,17 @@ const PasswordsList = ({
       });
     } catch (err: any) {
       console.error('Error deleting password:', err);
+      const errorMessage = err?.message || 'Unknown error';
+      
       toast({
         title: "Error",
-        description: `Failed to delete password: ${err.message || 'Unknown error'}`,
+        description: `Failed to delete password: ${errorMessage}`,
         variant: "destructive",
       });
+      
+      onError(errorMessage);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -110,13 +138,39 @@ const PasswordsList = ({
                       {entry.max_uses === null && ' (∞)'}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeletePassword(entry.id)}
-                      >
-                        <Trash className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={deletingId === entry.id}
+                          >
+                            {deletingId === entry.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash className="h-4 w-4 text-destructive" />
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Password</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete the password for {entry.community_name}? 
+                              This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDeletePassword(entry.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </TableCell>
                   </TableRow>
                 ))}

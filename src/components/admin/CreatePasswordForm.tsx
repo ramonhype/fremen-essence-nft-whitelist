@@ -13,28 +13,59 @@ import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+
+const passwordSchema = z.object({
+  community_name: z.string().min(1, "Community name is required"),
+  password: z.string().min(1, "Password is required"),
+  max_uses: z.string().optional(),
+});
+
+type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 interface CreatePasswordFormProps {
   onPasswordCreated: (newPassword: any) => void;
+  onError: (errorMessage: string) => void;
 }
 
-const CreatePasswordForm = ({ onPasswordCreated }: CreatePasswordFormProps) => {
-  const [newPassword, setNewPassword] = useState('');
-  const [newCommunity, setNewCommunity] = useState('');
-  const [maxUses, setMaxUses] = useState<string>('');
+const CreatePasswordForm = ({ onPasswordCreated, onError }: CreatePasswordFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const handleCreatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const form = useForm<PasswordFormValues>({
+    resolver: zodResolver(passwordSchema),
+    defaultValues: {
+      community_name: '',
+      password: '',
+      max_uses: '',
+    },
+  });
+
+  const handleCreatePassword = async (values: PasswordFormValues) => {
     setIsLoading(true);
-    setError(null);
-
+    
     try {
-      // Convert maxUses to number or null if empty
-      const parsedMaxUses = maxUses.trim() !== '' ? parseInt(maxUses, 10) : null;
+      // Check if we have an authenticated session first
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session) {
+        throw new Error("You must be logged in to create passwords");
+      }
       
-      if (maxUses.trim() !== '' && isNaN(parsedMaxUses as number)) {
+      // Convert maxUses to number or null if empty
+      const parsedMaxUses = values.max_uses?.trim() !== '' 
+        ? parseInt(values.max_uses!, 10) 
+        : null;
+      
+      if (values.max_uses?.trim() !== '' && isNaN(parsedMaxUses as number)) {
         toast({
           title: "Invalid Input",
           description: "Maximum uses must be a valid number",
@@ -44,48 +75,55 @@ const CreatePasswordForm = ({ onPasswordCreated }: CreatePasswordFormProps) => {
         return;
       }
 
+      // Log the data we're trying to insert
       console.log('Inserting password with data:', {
-        password: newPassword,
-        community_name: newCommunity,
+        password: values.password,
+        community_name: values.community_name,
         max_uses: parsedMaxUses,
-        current_uses: 0
+        current_uses: 0,
+        active: true
       });
 
-      const { data, error } = await supabase
+      // Perform the insert operation
+      const { data, error: insertError } = await supabase
         .from('community_passwords')
         .insert({
-          password: newPassword,
-          community_name: newCommunity,
+          password: values.password,
+          community_name: values.community_name,
           max_uses: parsedMaxUses,
           current_uses: 0,
           active: true
         })
         .select();
         
-      if (error) {
-        console.error('Supabase error details:', error);
-        throw error;
+      if (insertError) {
+        console.error('Supabase error details:', insertError);
+        throw insertError;
       }
       
-      if (data) {
+      if (data && data.length > 0) {
+        console.log("Successfully created password:", data[0]);
         onPasswordCreated(data[0]);
-        setNewPassword('');
-        setNewCommunity('');
-        setMaxUses('');
+        form.reset();
         
         toast({
           title: "Password Created",
-          description: `Password for ${newCommunity} created successfully`,
+          description: `Password for ${values.community_name} created successfully`,
         });
+      } else {
+        throw new Error("No data returned after password creation");
       }
     } catch (err: any) {
       console.error('Error creating password:', err);
+      const errorMessage = err?.message || 'Unknown error';
+      
       toast({
         title: "Error",
-        description: `Failed to create password: ${err.message || 'Unknown error'}`,
+        description: `Failed to create password: ${errorMessage}`,
         variant: "destructive",
       });
-      setError(`Failed to create password: ${err.message || 'Unknown error'}`);
+      
+      onError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -98,63 +136,82 @@ const CreatePasswordForm = ({ onPasswordCreated }: CreatePasswordFormProps) => {
         <CardDescription>Generate passwords for different communities</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleCreatePassword}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="community">Community Name</Label>
-              <Input
-                id="community"
-                value={newCommunity}
-                onChange={(e) => setNewCommunity(e.target.value)}
-                placeholder="e.g., Discord, Twitter"
-                required
-                className="border-nft-border bg-nft-muted focus:border-nft-primary"
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleCreatePassword)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="community_name"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel>Community Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="e.g., Discord, Twitter"
+                        className="border-nft-border bg-nft-muted focus:border-nft-primary"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="Enter secure password"
+                        className="border-nft-border bg-nft-muted focus:border-nft-primary"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="max_uses"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel>Max Uses (Optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number" 
+                        min="1"
+                        placeholder="Leave empty for unlimited"
+                        className="border-nft-border bg-nft-muted focus:border-nft-primary"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Enter secure password"
-                required
-                className="border-nft-border bg-nft-muted focus:border-nft-primary"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="maxUses">Max Uses (Optional)</Label>
-              <Input
-                id="maxUses"
-                type="number"
-                min="1"
-                value={maxUses}
-                onChange={(e) => setMaxUses(e.target.value)}
-                placeholder="Leave empty for unlimited"
-                className="border-nft-border bg-nft-muted focus:border-nft-primary"
-              />
-            </div>
-          </div>
-          {error && (
-            <div className="mt-4 p-3 bg-destructive/10 border border-destructive rounded-md text-destructive text-sm">
-              {error}
-            </div>
-          )}
-          <Button 
-            type="submit" 
-            className="mt-4 bg-nft-primary hover:bg-nft-secondary transition-colors"
-            disabled={isLoading || !newPassword || !newCommunity}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              "Create Password"
-            )}
-          </Button>
-        </form>
+            
+            <Button 
+              type="submit" 
+              className="mt-4 bg-nft-primary hover:bg-nft-secondary transition-colors"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Password"
+              )}
+            </Button>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   );
