@@ -11,10 +11,13 @@ export interface VerifyDiscordResult {
 
 // Function to initiate Discord OAuth via Supabase
 export async function signInWithDiscord() {
+  // Get the current URL's origin for proper redirects
+  const redirectTo = window.location.origin + window.location.pathname;
+  
   return await supabase.auth.signInWithOAuth({
     provider: 'discord',
     options: {
-      redirectTo: window.location.origin,
+      redirectTo: redirectTo,
       scopes: 'identify guilds',
     }
   });
