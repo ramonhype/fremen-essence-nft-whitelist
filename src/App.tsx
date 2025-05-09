@@ -9,7 +9,6 @@ import { chains, RainbowKitProvider, WagmiConfig, darkTheme, wagmiConfig } from 
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import Auth from "./components/auth/Auth";
-import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 import DiscordCallback from "./pages/DiscordCallback";
 import AuthGuard from "./components/auth/AuthGuard";
@@ -22,7 +21,7 @@ const App = () => (
       <RainbowKitProvider 
         chains={chains}
         theme={darkTheme({
-          accentColor: '#6366f1',
+          accentColor: '#4F9AF4',
           accentColorForeground: 'white',
           borderRadius: 'medium',
           fontStack: 'system',
@@ -40,7 +39,6 @@ const App = () => (
                   <Admin />
                 </AuthGuard>
               } />
-              <Route path="/about" element={<About />} />
               <Route path="/discord-callback" element={<DiscordCallback />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
