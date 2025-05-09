@@ -55,6 +55,7 @@ const PasswordManager = () => {
       if (error) throw error;
       
       setPasswords(data || []);
+      setError(null);
     } catch (err) {
       console.error('Error fetching passwords:', err);
       setError('Failed to load community passwords');
@@ -66,6 +67,7 @@ const PasswordManager = () => {
   const handleCreatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
 
     try {
       // Convert maxUses to number or null if empty
@@ -81,35 +83,48 @@ const PasswordManager = () => {
         return;
       }
 
+      console.log('Inserting password with data:', {
+        password: newPassword,
+        community_name: newCommunity,
+        max_uses: parsedMaxUses,
+        current_uses: 0
+      });
+
       const { data, error } = await supabase
         .from('community_passwords')
         .insert({
           password: newPassword,
           community_name: newCommunity,
           max_uses: parsedMaxUses,
-          current_uses: 0
+          current_uses: 0,
+          active: true
         })
-        .select()
-        .single();
+        .select();
         
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error details:', error);
+        throw error;
+      }
       
-      setPasswords([data, ...passwords]);
-      setNewPassword('');
-      setNewCommunity('');
-      setMaxUses('');
-      
-      toast({
-        title: "Password Created",
-        description: `Password for ${newCommunity} created successfully`,
-      });
-    } catch (err) {
+      if (data) {
+        setPasswords([data[0], ...passwords]);
+        setNewPassword('');
+        setNewCommunity('');
+        setMaxUses('');
+        
+        toast({
+          title: "Password Created",
+          description: `Password for ${newCommunity} created successfully`,
+        });
+      }
+    } catch (err: any) {
       console.error('Error creating password:', err);
       toast({
         title: "Error",
-        description: "Failed to create password",
+        description: `Failed to create password: ${err.message || 'Unknown error'}`,
         variant: "destructive",
       });
+      setError(`Failed to create password: ${err.message || 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
@@ -130,11 +145,11 @@ const PasswordManager = () => {
         title: "Password Deleted",
         description: "Community password has been removed",
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error deleting password:', err);
       toast({
         title: "Error",
-        description: "Failed to delete password",
+        description: `Failed to delete password: ${err.message || 'Unknown error'}`,
         variant: "destructive",
       });
     }
@@ -190,6 +205,11 @@ const PasswordManager = () => {
                 />
               </div>
             </div>
+            {error && (
+              <div className="mt-4 p-3 bg-destructive/10 border border-destructive rounded-md text-destructive text-sm">
+                {error}
+              </div>
+            )}
             <Button 
               type="submit" 
               className="mt-4 bg-nft-primary hover:bg-nft-secondary transition-colors"
