@@ -51,29 +51,29 @@ export type Database = {
       whitelist_registrations: {
         Row: {
           created_at: string
+          discord_username: string
+          discord_verified: boolean
           id: string
           name: string
           password_id: string | null
-          twitter_username: string
-          twitter_verified: boolean
           wallet_address: string
         }
         Insert: {
           created_at?: string
+          discord_username: string
+          discord_verified?: boolean
           id?: string
           name: string
           password_id?: string | null
-          twitter_username: string
-          twitter_verified?: boolean
           wallet_address: string
         }
         Update: {
           created_at?: string
+          discord_username?: string
+          discord_verified?: boolean
           id?: string
           name?: string
           password_id?: string | null
-          twitter_username?: string
-          twitter_verified?: boolean
           wallet_address?: string
         }
         Relationships: [

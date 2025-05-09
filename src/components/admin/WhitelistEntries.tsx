@@ -20,7 +20,6 @@ import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
 interface WhitelistEntry {
   id: string;
-  name: string;
   wallet_address: string;
   discord_username: string;
   discord_verified: boolean;
@@ -46,7 +45,6 @@ const WhitelistEntries = () => {
         // Convert the data to match our WhitelistEntry interface
         const formattedEntries = data?.map(entry => ({
           id: entry.id,
-          name: entry.name,
           wallet_address: entry.wallet_address,
           discord_username: entry.discord_username || "Verified via OAuth",
           discord_verified: !!entry.discord_verified,
@@ -94,17 +92,15 @@ const WhitelistEntries = () => {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-nft-muted/50">
-                  <TableHead className="w-1/5">Name</TableHead>
                   <TableHead className="w-1/4">Wallet Address</TableHead>
-                  <TableHead className="w-1/5">Discord</TableHead>
-                  <TableHead className="w-1/6">Discord Verified</TableHead>
-                  <TableHead className="w-1/5">Registered</TableHead>
+                  <TableHead className="w-1/4">Discord</TableHead>
+                  <TableHead className="w-1/4">Discord Verified</TableHead>
+                  <TableHead className="w-1/4">Registered</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {entries.map((entry) => (
                   <TableRow key={entry.id} className="hover:bg-nft-muted/50">
-                    <TableCell className="font-medium">{entry.name}</TableCell>
                     <TableCell className="font-mono text-xs">{formatAddress(entry.wallet_address)}</TableCell>
                     <TableCell>{entry.discord_username}</TableCell>
                     <TableCell>
@@ -125,7 +121,7 @@ const WhitelistEntries = () => {
                 ))}
                 {entries.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
+                    <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
                       No registrations yet
                     </TableCell>
                   </TableRow>

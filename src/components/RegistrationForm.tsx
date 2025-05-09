@@ -6,14 +6,13 @@ import {
   Card, 
   CardContent, 
   CardDescription, 
-  CardFooter, 
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Wallet, MessagesSquare, CheckCircle2, Circle, Loader2 } from 'lucide-react';
+import { Wallet, MessagesSquare, CheckCircle2, Loader2 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { 
   getDiscordAuthUrl, 
@@ -24,7 +23,6 @@ import {
 
 const RegistrationForm = () => {
   const { address, isConnected } = useAccount();
-  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [isPasswordValid, setIsPasswordValid] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -127,6 +125,15 @@ const RegistrationForm = () => {
       return;
     }
 
+    if (!isDiscordVerified) {
+      toast({
+        title: "Discord not verified",
+        description: "Please verify your Discord membership first",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     
     try {
@@ -144,7 +151,6 @@ const RegistrationForm = () => {
         .from('whitelist_registrations')
         .insert({
           wallet_address: address,
-          name,
           discord_username: "", // Empty string as we're using OAuth
           discord_verified: isDiscordVerified,
           password_id: passwordData.id
@@ -198,18 +204,6 @@ const RegistrationForm = () => {
                   {isConnected ? address : "Please connect your wallet"}
                 </span>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your full name"
-                required
-                className="border-nft-border bg-nft-muted focus:border-nft-primary"
-              />
             </div>
 
             <div className="space-y-2">
@@ -276,7 +270,7 @@ const RegistrationForm = () => {
             <Button 
               type="submit" 
               className="w-full bg-nft-primary hover:bg-nft-secondary transition-colors"
-              disabled={!isConnected || !isPasswordValid || !name || isLoading || !isDiscordVerified}
+              disabled={!isConnected || !isPasswordValid || isLoading || !isDiscordVerified}
             >
               {isLoading ? "Submitting..." : "Register for Whitelist"}
             </Button>
