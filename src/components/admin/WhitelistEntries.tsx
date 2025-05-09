@@ -22,8 +22,8 @@ interface WhitelistEntry {
   id: string;
   name: string;
   wallet_address: string;
-  twitter_username: string;
-  twitter_verified: boolean;
+  discord_username: string;
+  discord_verified: boolean;
   created_at: string;
 }
 
@@ -86,8 +86,8 @@ const WhitelistEntries = () => {
                 <TableRow className="hover:bg-nft-muted/50">
                   <TableHead className="w-1/5">Name</TableHead>
                   <TableHead className="w-1/4">Wallet Address</TableHead>
-                  <TableHead className="w-1/5">Twitter</TableHead>
-                  <TableHead className="w-1/6">Twitter Verified</TableHead>
+                  <TableHead className="w-1/5">Discord</TableHead>
+                  <TableHead className="w-1/6">Discord Verified</TableHead>
                   <TableHead className="w-1/5">Registered</TableHead>
                 </TableRow>
               </TableHeader>
@@ -96,9 +96,9 @@ const WhitelistEntries = () => {
                   <TableRow key={entry.id} className="hover:bg-nft-muted/50">
                     <TableCell className="font-medium">{entry.name}</TableCell>
                     <TableCell className="font-mono text-xs">{formatAddress(entry.wallet_address)}</TableCell>
-                    <TableCell>@{entry.twitter_username}</TableCell>
+                    <TableCell>{entry.discord_username}</TableCell>
                     <TableCell>
-                      {entry.twitter_verified ? (
+                      {entry.discord_verified ? (
                         <div className="flex items-center text-green-500">
                           <CheckCircle2 className="h-4 w-4 mr-1" />
                           <span>Verified</span>

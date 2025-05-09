@@ -13,19 +13,19 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Wallet, Twitter, CheckCircle2, Circle, Loader2 } from 'lucide-react';
+import { Wallet, MessageSquare, CheckCircle2, Circle, Loader2 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
-import { verifyTwitterFollower, TWITTER_ACCOUNT_TO_FOLLOW } from "@/utils/twitterVerification";
+import { verifyDiscordMember, DISCORD_SERVER_TO_JOIN } from "@/utils/discordVerification";
 
 const RegistrationForm = () => {
   const { address, isConnected } = useAccount();
   const [name, setName] = useState('');
-  const [twitter, setTwitter] = useState('');
+  const [discord, setDiscord] = useState('');
   const [password, setPassword] = useState('');
   const [isPasswordValid, setIsPasswordValid] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isVerifyingTwitter, setIsVerifyingTwitter] = useState(false);
-  const [isTwitterVerified, setIsTwitterVerified] = useState(false);
+  const [isVerifyingDiscord, setIsVerifyingDiscord] = useState(false);
+  const [isDiscordVerified, setIsDiscordVerified] = useState(false);
   const [registrationId, setRegistrationId] = useState<string | null>(null);
   
   const handlePasswordCheck = async () => {
@@ -70,22 +70,22 @@ const RegistrationForm = () => {
     }
   };
 
-  const handleTwitterVerification = async () => {
-    if (!twitter) {
+  const handleDiscordVerification = async () => {
+    if (!discord) {
       toast({
         title: "Error",
-        description: "Please enter your Twitter username",
+        description: "Please enter your Discord username",
         variant: "destructive",
       });
       return;
     }
 
-    setIsVerifyingTwitter(true);
+    setIsVerifyingDiscord(true);
     
     try {
-      const { verified, message } = await verifyTwitterFollower(twitter);
+      const { verified, message } = await verifyDiscordMember(discord);
       
-      setIsTwitterVerified(verified);
+      setIsDiscordVerified(verified);
       
       toast({
         title: verified ? "Success" : "Verification Failed",
@@ -97,18 +97,18 @@ const RegistrationForm = () => {
       if (registrationId) {
         await supabase
           .from('whitelist_registrations')
-          .update({ twitter_verified: verified })
+          .update({ discord_verified: verified })
           .eq('id', registrationId);
       }
     } catch (error) {
-      console.error('Error verifying Twitter:', error);
+      console.error('Error verifying Discord:', error);
       toast({
         title: "Error",
-        description: "Failed to verify Twitter follow status",
+        description: "Failed to verify Discord membership status",
         variant: "destructive",
       });
     } finally {
-      setIsVerifyingTwitter(false);
+      setIsVerifyingDiscord(false);
     }
   };
 
@@ -150,8 +150,8 @@ const RegistrationForm = () => {
         .insert({
           wallet_address: address,
           name,
-          twitter_username: twitter,
-          twitter_verified: isTwitterVerified,
+          discord_username: discord,
+          discord_verified: isDiscordVerified,
           password_id: passwordData.id
         })
         .select('id')
@@ -218,56 +218,53 @@ const RegistrationForm = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="twitter" className="flex items-center space-x-2">
-                <span>Twitter Username</span>
+              <Label htmlFor="discord" className="flex items-center space-x-2">
+                <span>Discord Username</span>
                 <span className="text-xs text-muted-foreground">
-                  (Must follow @{TWITTER_ACCOUNT_TO_FOLLOW})
+                  (Must be a member of {DISCORD_SERVER_TO_JOIN})
                 </span>
               </Label>
               <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <span className="absolute left-3 inset-y-0 flex items-center text-muted-foreground">@</span>
-                  <Input
-                    id="twitter"
-                    value={twitter}
-                    onChange={(e) => {
-                      setTwitter(e.target.value);
-                      setIsTwitterVerified(false); // Reset verification on change
-                    }}
-                    className="pl-7 border-nft-border bg-nft-muted focus:border-nft-primary"
-                    placeholder="username"
-                    required
-                  />
-                </div>
+                <Input
+                  id="discord"
+                  value={discord}
+                  onChange={(e) => {
+                    setDiscord(e.target.value);
+                    setIsDiscordVerified(false); // Reset verification on change
+                  }}
+                  className="border-nft-border bg-nft-muted focus:border-nft-primary"
+                  placeholder="username#0000"
+                  required
+                />
                 <Button 
                   type="button" 
                   variant="secondary" 
-                  onClick={handleTwitterVerification}
-                  disabled={!twitter || isVerifyingTwitter}
+                  onClick={handleDiscordVerification}
+                  disabled={!discord || isVerifyingDiscord}
                   className="flex items-center gap-2"
                 >
-                  {isVerifyingTwitter ? (
+                  {isVerifyingDiscord ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       <span>Verifying</span>
                     </>
-                  ) : isTwitterVerified ? (
+                  ) : isDiscordVerified ? (
                     <>
                       <CheckCircle2 className="h-4 w-4 text-green-500" />
                       <span>Verified</span>
                     </>
                   ) : (
                     <>
-                      <Twitter className="h-4 w-4" />
+                      <MessageSquare className="h-4 w-4" />
                       <span>Verify</span>
                     </>
                   )}
                 </Button>
               </div>
-              {isTwitterVerified && (
+              {isDiscordVerified && (
                 <p className="text-xs text-green-500 flex items-center gap-1">
                   <CheckCircle2 className="h-3 w-3" />
-                  Twitter follow verified
+                  Discord membership verified
                 </p>
               )}
             </div>
@@ -308,7 +305,7 @@ const RegistrationForm = () => {
             <Button 
               type="submit" 
               className="w-full bg-nft-primary hover:bg-nft-secondary transition-colors"
-              disabled={!isConnected || !isPasswordValid || !name || !twitter || isLoading || !isTwitterVerified}
+              disabled={!isConnected || !isPasswordValid || !name || !discord || isLoading || !isDiscordVerified}
             >
               {isLoading ? "Submitting..." : "Register for Whitelist"}
             </Button>
