@@ -12,6 +12,8 @@ import Auth from "./components/auth/Auth";
 import NotFound from "./pages/NotFound";
 import DiscordCallback from "./pages/DiscordCallback";
 import AuthGuard from "./components/auth/AuthGuard";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +42,8 @@ const App = () => (
                 </AuthGuard>
               } />
               <Route path="/discord-callback" element={<DiscordCallback />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
