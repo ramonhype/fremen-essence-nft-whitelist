@@ -13,7 +13,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Wallet } from 'lucide-react';
+import { Wallet, Twitter, CheckCircle2, Circle, Loader2 } from 'lucide-react';
+import { supabase } from "@/integrations/supabase/client";
+import { verifyTwitterFollower, TWITTER_ACCOUNT_TO_FOLLOW } from "@/utils/twitterVerification";
 
 const RegistrationForm = () => {
   const { address, isConnected } = useAccount();
@@ -22,14 +24,28 @@ const RegistrationForm = () => {
   const [password, setPassword] = useState('');
   const [isPasswordValid, setIsPasswordValid] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isVerifyingTwitter, setIsVerifyingTwitter] = useState(false);
+  const [isTwitterVerified, setIsTwitterVerified] = useState(false);
+  const [registrationId, setRegistrationId] = useState<string | null>(null);
   
   const handlePasswordCheck = async () => {
     setIsLoading(true);
-    // This will be replaced with actual Supabase logic once integrated
-    setTimeout(() => {
-      setIsPasswordValid(password === "demo123"); // Placeholder validation
-      setIsLoading(false);
-      if (password === "demo123") {
+    
+    try {
+      // Check password against Supabase
+      const { data, error } = await supabase
+        .from('community_passwords')
+        .select('id')
+        .eq('password', password)
+        .eq('active', true)
+        .single();
+      
+      if (error) throw error;
+      
+      const isValid = !!data;
+      setIsPasswordValid(isValid);
+      
+      if (isValid) {
         toast({
           title: "Success",
           description: "Password verified successfully",
@@ -41,7 +57,59 @@ const RegistrationForm = () => {
           variant: "destructive",
         });
       }
-    }, 1000);
+    } catch (error) {
+      console.error('Error checking password:', error);
+      toast({
+        title: "Error",
+        description: "Failed to verify password",
+        variant: "destructive",
+      });
+      setIsPasswordValid(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTwitterVerification = async () => {
+    if (!twitter) {
+      toast({
+        title: "Error",
+        description: "Please enter your Twitter username",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsVerifyingTwitter(true);
+    
+    try {
+      const { verified, message } = await verifyTwitterFollower(twitter);
+      
+      setIsTwitterVerified(verified);
+      
+      toast({
+        title: verified ? "Success" : "Verification Failed",
+        description: message,
+        variant: verified ? "default" : "destructive",
+      });
+      
+      // If already registered, update the verification status
+      if (registrationId) {
+        await supabase
+          .from('whitelist_registrations')
+          .update({ twitter_verified: verified })
+          .eq('id', registrationId);
+      }
+    } catch (error) {
+      console.error('Error verifying Twitter:', error);
+      toast({
+        title: "Error",
+        description: "Failed to verify Twitter follow status",
+        variant: "destructive",
+      });
+    } finally {
+      setIsVerifyingTwitter(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,14 +133,57 @@ const RegistrationForm = () => {
     }
 
     setIsLoading(true);
-    // This will be replaced with actual Supabase registration logic
-    setTimeout(() => {
+    
+    try {
+      // Get password ID
+      const { data: passwordData } = await supabase
+        .from('community_passwords')
+        .select('id')
+        .eq('password', password)
+        .single();
+      
+      if (!passwordData) throw new Error("Password not found");
+      
+      // Insert registration data
+      const { data, error } = await supabase
+        .from('whitelist_registrations')
+        .insert({
+          wallet_address: address,
+          name,
+          twitter_username: twitter,
+          twitter_verified: isTwitterVerified,
+          password_id: passwordData.id
+        })
+        .select('id')
+        .single();
+      
+      if (error) {
+        if (error.code === '23505') { // Unique violation
+          toast({
+            title: "Already Registered",
+            description: "This wallet address is already registered",
+            variant: "destructive",
+          });
+        } else {
+          throw error;
+        }
+      } else {
+        setRegistrationId(data.id);
+        toast({
+          title: "Registration Successful",
+          description: "Your wallet has been registered for the whitelist",
+        });
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
       toast({
-        title: "Registration Successful",
-        description: "Your wallet has been registered for the whitelist",
+        title: "Registration Failed",
+        description: "An error occurred during registration",
+        variant: "destructive",
       });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -107,18 +218,58 @@ const RegistrationForm = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="twitter">Twitter Username</Label>
-              <div className="relative">
-                <span className="absolute left-3 inset-y-0 flex items-center text-muted-foreground">@</span>
-                <Input
-                  id="twitter"
-                  value={twitter}
-                  onChange={(e) => setTwitter(e.target.value)}
-                  className="pl-7 border-nft-border bg-nft-muted focus:border-nft-primary"
-                  placeholder="username"
-                  required
-                />
+              <Label htmlFor="twitter" className="flex items-center space-x-2">
+                <span>Twitter Username</span>
+                <span className="text-xs text-muted-foreground">
+                  (Must follow @{TWITTER_ACCOUNT_TO_FOLLOW})
+                </span>
+              </Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <span className="absolute left-3 inset-y-0 flex items-center text-muted-foreground">@</span>
+                  <Input
+                    id="twitter"
+                    value={twitter}
+                    onChange={(e) => {
+                      setTwitter(e.target.value);
+                      setIsTwitterVerified(false); // Reset verification on change
+                    }}
+                    className="pl-7 border-nft-border bg-nft-muted focus:border-nft-primary"
+                    placeholder="username"
+                    required
+                  />
+                </div>
+                <Button 
+                  type="button" 
+                  variant="secondary" 
+                  onClick={handleTwitterVerification}
+                  disabled={!twitter || isVerifyingTwitter}
+                  className="flex items-center gap-2"
+                >
+                  {isVerifyingTwitter ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Verifying</span>
+                    </>
+                  ) : isTwitterVerified ? (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <span>Verified</span>
+                    </>
+                  ) : (
+                    <>
+                      <Twitter className="h-4 w-4" />
+                      <span>Verify</span>
+                    </>
+                  )}
+                </Button>
               </div>
+              {isTwitterVerified && (
+                <p className="text-xs text-green-500 flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Twitter follow verified
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -128,7 +279,10 @@ const RegistrationForm = () => {
                   id="password"
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setIsPasswordValid(false); // Reset validation on change
+                  }}
                   placeholder="Enter community password"
                   className="border-nft-border bg-nft-muted focus:border-nft-primary"
                   required
@@ -143,7 +297,10 @@ const RegistrationForm = () => {
                 </Button>
               </div>
               {isPasswordValid && (
-                <p className="text-xs text-green-500">Password verified</p>
+                <p className="text-xs text-green-500 flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Password verified
+                </p>
               )}
             </div>
           </div>
@@ -151,7 +308,7 @@ const RegistrationForm = () => {
             <Button 
               type="submit" 
               className="w-full bg-nft-primary hover:bg-nft-secondary transition-colors"
-              disabled={!isConnected || !isPasswordValid || !name || !twitter || isLoading}
+              disabled={!isConnected || !isPasswordValid || !name || !twitter || isLoading || !isTwitterVerified}
             >
               {isLoading ? "Submitting..." : "Register for Whitelist"}
             </Button>

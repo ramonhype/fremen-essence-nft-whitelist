@@ -1,10 +1,9 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Card, 
   CardContent, 
   CardDescription, 
-  CardFooter, 
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card';
@@ -20,52 +19,111 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { Trash } from 'lucide-react';
+import { Trash, Loader2 } from 'lucide-react';
+import { supabase } from "@/integrations/supabase/client";
 
-// Placeholder data until Supabase integration
-const MOCK_PASSWORDS = [
-  { id: '1', password: 'demo123', community: 'Discord', created: '2025-04-10' },
-  { id: '2', password: 'alpha456', community: 'Twitter', created: '2025-05-01' },
-];
+interface Password {
+  id: string;
+  password: string;
+  community_name: string;
+  created_at: string;
+}
 
 const PasswordManager = () => {
-  const [passwords, setPasswords] = useState(MOCK_PASSWORDS);
+  const [passwords, setPasswords] = useState<Password[]>([]);
   const [newPassword, setNewPassword] = useState('');
   const [newCommunity, setNewCommunity] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingPasswords, setIsLoadingPasswords] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleCreatePassword = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetchPasswords();
+  }, []);
+
+  const fetchPasswords = async () => {
+    try {
+      setIsLoadingPasswords(true);
+      const { data, error } = await supabase
+        .from('community_passwords')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
+      if (error) throw error;
+      
+      setPasswords(data || []);
+    } catch (err) {
+      console.error('Error fetching passwords:', err);
+      setError('Failed to load community passwords');
+    } finally {
+      setIsLoadingPasswords(false);
+    }
+  };
+
+  const handleCreatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // This will be replaced with actual Supabase logic
-    setTimeout(() => {
-      const newPasswordEntry = {
-        id: Date.now().toString(),
-        password: newPassword,
-        community: newCommunity,
-        created: new Date().toISOString().split('T')[0]
-      };
+    try {
+      const { data, error } = await supabase
+        .from('community_passwords')
+        .insert({
+          password: newPassword,
+          community_name: newCommunity
+        })
+        .select()
+        .single();
+        
+      if (error) throw error;
       
-      setPasswords([...passwords, newPasswordEntry]);
+      setPasswords([data, ...passwords]);
       setNewPassword('');
       setNewCommunity('');
-      setIsLoading(false);
       
       toast({
         title: "Password Created",
         description: `Password for ${newCommunity} created successfully`,
       });
-    }, 1000);
+    } catch (err) {
+      console.error('Error creating password:', err);
+      toast({
+        title: "Error",
+        description: "Failed to create password",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleDeletePassword = (id: string) => {
-    setPasswords(passwords.filter(p => p.id !== id));
-    
-    toast({
-      title: "Password Deleted",
-      description: "Community password has been removed",
-    });
+  const handleDeletePassword = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('community_passwords')
+        .delete()
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+      setPasswords(passwords.filter(p => p.id !== id));
+      
+      toast({
+        title: "Password Deleted",
+        description: "Community password has been removed",
+      });
+    } catch (err) {
+      console.error('Error deleting password:', err);
+      toast({
+        title: "Error",
+        description: "Failed to delete password",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
   };
 
   return (
@@ -106,7 +164,14 @@ const PasswordManager = () => {
               className="mt-4 bg-nft-primary hover:bg-nft-secondary transition-colors"
               disabled={isLoading || !newPassword || !newCommunity}
             >
-              {isLoading ? "Creating..." : "Create Password"}
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Password"
+              )}
             </Button>
           </form>
         </CardContent>
@@ -118,43 +183,51 @@ const PasswordManager = () => {
           <CardDescription>Manage your community access passwords</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border border-nft-border">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-nft-muted/50">
-                  <TableHead className="w-1/3">Community</TableHead>
-                  <TableHead className="w-1/3">Password</TableHead>
-                  <TableHead className="w-1/4">Created</TableHead>
-                  <TableHead className="w-1/12 text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {passwords.map((entry) => (
-                  <TableRow key={entry.id} className="hover:bg-nft-muted/50">
-                    <TableCell className="font-medium">{entry.community}</TableCell>
-                    <TableCell className="font-mono">{entry.password}</TableCell>
-                    <TableCell>{entry.created}</TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeletePassword(entry.id)}
-                      >
-                        <Trash className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </TableCell>
+          {isLoadingPasswords ? (
+            <div className="flex justify-center items-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-nft-primary" />
+            </div>
+          ) : error ? (
+            <div className="text-center py-8 text-red-500">{error}</div>
+          ) : (
+            <div className="rounded-md border border-nft-border">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-nft-muted/50">
+                    <TableHead className="w-1/3">Community</TableHead>
+                    <TableHead className="w-1/3">Password</TableHead>
+                    <TableHead className="w-1/4">Created</TableHead>
+                    <TableHead className="w-1/12 text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-                {passwords.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
-                      No passwords created yet
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {passwords.map((entry) => (
+                    <TableRow key={entry.id} className="hover:bg-nft-muted/50">
+                      <TableCell className="font-medium">{entry.community_name}</TableCell>
+                      <TableCell className="font-mono">{entry.password}</TableCell>
+                      <TableCell>{formatDate(entry.created_at)}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeletePassword(entry.id)}
+                        >
+                          <Trash className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {passwords.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                        No passwords created yet
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
