@@ -22,19 +22,13 @@ import {
   arbitrum,
 } from 'wagmi/chains';
 import { publicProvider } from 'wagmi/providers/public';
-import { alchemyProvider } from 'wagmi/providers/alchemy';
 
-// Use multiple providers for better reliability
 const projectId = 'YOUR_PROJECT_ID'; // Replace with your WalletConnect project ID
 
-// Configure chains with multiple providers for better reliability
+// Configure chains with simple public provider
 const { chains, publicClient } = configureChains(
   [mainnet, polygon, optimism, arbitrum],
-  [
-    // Use alchemyProvider as a fallback or remove if you don't have an API key
-    // alchemyProvider({ apiKey: 'yourAlchemyApiKey' }), 
-    publicProvider()
-  ]
+  [publicProvider()]
 );
 
 const connectors = connectorsForWallets([
