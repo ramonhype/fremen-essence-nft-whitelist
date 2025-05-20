@@ -72,7 +72,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-[#F09600] text-white;
+    @apply bg-[#F09600]/0 text-white;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
