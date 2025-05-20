@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { checkDiscordVerification, updateDiscordVerificationStatus } from "@/utils/discordVerification";
 
 import WalletDisplay from './WalletDisplay';
+import XVerification from './XVerification';
 import DiscordVerification from './DiscordVerification';
 import PasswordVerification from './PasswordVerification';
 
@@ -23,6 +24,7 @@ const RegistrationForm = () => {
   const [password, setPassword] = useState('');
   const [isPasswordValid, setIsPasswordValid] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isXVerified, setIsXVerified] = useState(false);
   const [isDiscordVerified, setIsDiscordVerified] = useState(false);
   const [registrationId, setRegistrationId] = useState<string | null>(null);
   
@@ -112,6 +114,15 @@ const RegistrationForm = () => {
       return;
     }
 
+    if (!isXVerified) {
+      toast({
+        title: "X not verified",
+        description: "Please follow us on X first",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!isDiscordVerified) {
       toast({
         title: "Discord not verified",
@@ -193,7 +204,7 @@ const RegistrationForm = () => {
   };
 
   return (
-    <Card className="w-full max-w-md border-nft-border bg-nft-background/60 backdrop-blur-md text-white">
+    <Card className="w-full max-w-md border border-white/10 bg-white/5 backdrop-blur-md text-white shadow-lg">
       <CardHeader>
         <CardTitle className="text-2xl text-white">Whitelist Registration</CardTitle>
         <CardDescription className="text-white/80">Register your wallet for our upcoming NFT mint</CardDescription>
@@ -204,6 +215,11 @@ const RegistrationForm = () => {
             <WalletDisplay 
               address={address} 
               isConnected={isConnected} 
+            />
+
+            <XVerification 
+              isVerified={isXVerified}
+              onVerificationChange={setIsXVerified}
             />
 
             <DiscordVerification 
@@ -219,8 +235,8 @@ const RegistrationForm = () => {
           <div className="mt-6">
             <Button 
               type="submit" 
-              className="w-full bg-[#4F9AF4] hover:bg-[#4F9AF4]/80 text-white transition-colors"
-              disabled={!isConnected || !isPasswordValid || isLoading || !isDiscordVerified}
+              className="w-full bg-[#8b5cf6] hover:bg-[#8b5cf6]/80 text-white transition-colors"
+              disabled={!isConnected || !isPasswordValid || isLoading || !isDiscordVerified || !isXVerified}
             >
               {isLoading ? (
                 <>

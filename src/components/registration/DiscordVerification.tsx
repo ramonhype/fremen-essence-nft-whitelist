@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { MessagesSquare, CheckCircle2, Loader2 } from 'lucide-react';
-import { DISCORD_SERVER_TO_JOIN, signInWithDiscord, checkDiscordVerification } from "@/utils/discordVerification";
+import { MessagesSquare, CheckCircle2, Loader2, ExternalLink } from 'lucide-react';
+import { signInWithDiscord, checkDiscordVerification } from "@/utils/discordVerification";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -67,6 +67,10 @@ const DiscordVerification = ({ isVerified, onVerificationChange }: DiscordVerifi
     };
   }, [onVerificationChange]);
   
+  const openDiscordServer = () => {
+    window.open('https://discord.gg/gaibofficial', '_blank');
+  };
+  
   const handleDiscordVerification = async () => {
     try {
       setIsLoading(true);
@@ -116,7 +120,15 @@ const DiscordVerification = ({ isVerified, onVerificationChange }: DiscordVerifi
       <Label className="flex items-center space-x-2">
         <span>Discord Verification</span>
         <span className="text-xs text-muted-foreground">
-          (Must be a member of {DISCORD_SERVER_TO_JOIN})
+          (must be a member of{" "}
+          <button 
+            onClick={openDiscordServer}
+            className="text-[#4F9AF4] hover:underline inline-flex items-center"
+          >
+            GAIB's Discord
+            <ExternalLink className="h-3 w-3 ml-1" />
+          </button>
+          )
         </span>
       </Label>
       
@@ -133,7 +145,7 @@ const DiscordVerification = ({ isVerified, onVerificationChange }: DiscordVerifi
           variant="secondary" 
           onClick={handleDiscordVerification}
           disabled={isLoading}
-          className="w-full flex items-center justify-center gap-2"
+          className="w-full flex items-center justify-center gap-2 bg-[#4F9AF4] hover:bg-[#4F9AF4]/80 text-white"
         >
           {isLoading ? (
             <>

@@ -2,7 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 // Discord server that users need to join
-export const DISCORD_SERVER_TO_JOIN = "YourDiscordServer";
+export const DISCORD_SERVER_TO_JOIN = "GAIB's Discord";
 
 export interface VerifyDiscordResult {
   verified: boolean;
