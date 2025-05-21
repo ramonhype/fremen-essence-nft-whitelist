@@ -9,10 +9,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
-// Admin credentials
-const ADMIN_EMAIL = 'ramon@hype.partners';
-const ADMIN_PASSWORD = '123456789';
-
 interface AuthGuardProps {
   children: React.ReactNode;
 }
@@ -25,9 +21,36 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
   
   // Check if user is already authenticated on component mount
   useEffect(() => {
-    const checkAuth = () => {
-      const authStatus = localStorage.getItem('isAuthenticated') === 'true';
-      setIsAuthenticated(authStatus);
+    const checkAuth = async () => {
+      // Check if user is authenticated with Supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        // Verify that the user is in admin_users
+        const { data, error } = await supabase
+          .from('admin_users')
+          .select('id')
+          .eq('id', session.user.id);
+        
+        if (error) {
+          console.error('Error checking admin status:', error);
+          setIsAuthenticated(false);
+          return;
+        }
+        
+        if (data && data.length > 0) {
+          localStorage.setItem('isAuthenticated', 'true');
+          setIsAuthenticated(true);
+        } else {
+          // User is authenticated but not an admin
+          await supabase.auth.signOut();
+          setIsAuthenticated(false);
+        }
+      } else {
+        // Fallback to localStorage check for backward compatibility
+        const authStatus = localStorage.getItem('isAuthenticated') === 'true';
+        setIsAuthenticated(authStatus);
+      }
     };
     
     checkAuth();
@@ -38,28 +61,65 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
     setIsLoading(true);
     
     try {
-      // Simple authentication check with hardcoded credentials
-      if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) {
+        toast({
+          title: "Login Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        setIsAuthenticated(false);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Check if the user is an admin
+      if (data.user) {
+        const { data: adminData, error: adminError } = await supabase
+          .from('admin_users')
+          .select('id')
+          .eq('id', data.user.id);
+        
+        if (adminError) {
+          toast({
+            title: "Verification Failed",
+            description: "Could not verify admin status",
+            variant: "destructive",
+          });
+          setIsAuthenticated(false);
+          setIsLoading(false);
+          return;
+        }
+        
+        if (!adminData || adminData.length === 0) {
+          toast({
+            title: "Access Denied",
+            description: "You are not authorized as an admin",
+            variant: "destructive",
+          });
+          await supabase.auth.signOut();
+          setIsAuthenticated(false);
+          setIsLoading(false);
+          return;
+        }
+        
         localStorage.setItem('isAuthenticated', 'true');
         setIsAuthenticated(true);
         
         toast({
           title: "Login Successful",
-          description: "You are now logged in",
+          description: "You are now logged in as admin",
         });
-      } else {
-        toast({
-          title: "Login Failed",
-          description: "Invalid email or password",
-          variant: "destructive",
-        });
-        setIsAuthenticated(false);
       }
     } catch (error) {
       console.error('Login error:', error);
       toast({
         title: "Login Failed",
-        description: "An error occurred during login",
+        description: "An unexpected error occurred",
         variant: "destructive",
       });
       setIsAuthenticated(false);
