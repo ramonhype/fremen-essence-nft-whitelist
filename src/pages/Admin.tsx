@@ -1,14 +1,13 @@
 
 import React from 'react';
-import Layout from '@/components/layout/Layout';
-import PasswordManager from '@/components/admin/PasswordManager';
-import WhitelistEntries from '@/components/admin/WhitelistEntries';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
+import PasswordManager from '@/components/admin/PasswordManager';
+import WhitelistEntries from '@/components/admin/WhitelistEntries';
 
 const Admin = () => {
   const navigate = useNavigate();

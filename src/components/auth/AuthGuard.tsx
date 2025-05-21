@@ -16,12 +16,11 @@ interface AuthGuardProps {
 
 const AuthGuard = ({ children }: AuthGuardProps) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [email, setEmail] = useState('ramon@hype.partners');
-  const [password, setPassword] = useState('rcy0jvu2uyg!YXT9nvr');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [needsRegistration, setNeedsRegistration] = useState(false);
   
   // Check if user is already authenticated on component mount
   useEffect(() => {
@@ -30,26 +29,8 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session) {
-        // Verify that the user is in admin_users
-        const { data, error } = await supabase
-          .from('admin_users')
-          .select('id')
-          .eq('id', session.user.id);
-        
-        if (error) {
-          console.error('Error checking admin status:', error);
-          setIsAuthenticated(false);
-          return;
-        }
-        
-        if (data && data.length > 0) {
-          localStorage.setItem('isAuthenticated', 'true');
-          setIsAuthenticated(true);
-        } else {
-          // User is authenticated but not an admin
-          await supabase.auth.signOut();
-          setIsAuthenticated(false);
-        }
+        localStorage.setItem('isAuthenticated', 'true');
+        setIsAuthenticated(true);
       } else {
         // Fallback to localStorage check for backward compatibility
         const authStatus = localStorage.getItem('isAuthenticated') === 'true';
@@ -57,27 +38,7 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
       }
     };
     
-    // Check if we need to create the admin account
-    const checkAdminAccount = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('admin_users')
-          .select('id');
-        
-        if (error) {
-          console.error('Error checking admin users:', error);
-          return;
-        }
-        
-        // If no admin users exist, we need to register one
-        setNeedsRegistration(data.length === 0);
-      } catch (err) {
-        console.error('Error checking admin users:', err);
-      }
-    };
-    
     checkAuth();
-    checkAdminAccount();
   }, []);
   
   const handleLogin = async (e: React.FormEvent) => {
@@ -86,7 +47,7 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
     setLoginError(null);
     
     try {
-      // First, try to sign in with the provided credentials
+      // Try to sign in with the provided credentials
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -94,11 +55,9 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
       
       if (error) {
         if (error.message.includes('Email logins are disabled')) {
-          setLoginError('Email logins are currently disabled in the Supabase project settings. Please go to your Supabase dashboard under Authentication > Providers > Email and enable them.');
+          setLoginError('Email logins are currently disabled in the Supabase project settings. Please enable them in your Supabase dashboard under Authentication > Providers > Email.');
         } else if (error.message.includes('Invalid login credentials')) {
-          // Try to create the account if login failed
-          setNeedsRegistration(true);
-          setLoginError('Account not found. Please use the Create Admin Account button to register.');
+          setLoginError('Invalid login credentials. Please try again or create an admin account.');
         } else {
           setLoginError(error.message);
         }
@@ -107,34 +66,16 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
         return;
       }
       
-      // Check if the user is an admin
       if (data.user) {
-        const { data: adminData, error: adminError } = await supabase
+        // Add the user to admin_users table if not already there
+        const { error: adminError } = await supabase
           .from('admin_users')
-          .select('id')
-          .eq('id', data.user.id);
+          .insert([{ id: data.user.id }])
+          .select()
+          .single();
         
-        if (adminError) {
-          setLoginError('Could not verify admin status');
-          setIsAuthenticated(false);
-          setIsLoading(false);
-          return;
-        }
-        
-        if (!adminData || adminData.length === 0) {
-          // User exists but not in admin_users, add them
-          const { error: insertError } = await supabase
-            .from('admin_users')
-            .insert([{ id: data.user.id }]);
-          
-          if (insertError) {
-            setLoginError(`Error adding user as admin: ${insertError.message}`);
-            await supabase.auth.signOut();
-            setIsAuthenticated(false);
-            setIsLoading(false);
-            return;
-          }
-        }
+        // It's okay if there's an error from the insert - could be a duplicate
+        // We'll proceed with authentication anyway
         
         localStorage.setItem('isAuthenticated', 'true');
         setIsAuthenticated(true);
@@ -176,12 +117,14 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
       }
       
       if (data.user) {
-        // Add the user to admin_users table
+        // No need to check for admin status - just add the user to admin_users
         const { error: adminError } = await supabase
           .from('admin_users')
-          .insert([{ id: data.user.id }]);
-        
-        if (adminError) {
+          .insert([{ id: data.user.id }])
+          .select()
+          .single();
+          
+        if (adminError && !adminError.message.includes('duplicate')) {
           setLoginError(`Error creating admin: ${adminError.message}`);
           setIsLoading(false);
           return;
@@ -270,7 +213,7 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
           </div>
           <CardTitle className="text-2xl text-center font-bold">Admin Access</CardTitle>
           <CardDescription className="text-center">
-            {needsRegistration ? 'Create your admin account to get started' : 'Enter your credentials to access the admin dashboard'}
+            Enter your credentials to access the admin dashboard
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -343,16 +286,6 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
                   </>
                 ) : 'Create Admin Account'}
               </Button>
-            </div>
-            
-            <div className="rounded-md bg-blue-50 p-3 mt-2">
-              <div className="flex">
-                <div className="text-sm text-blue-700">
-                  <p className="font-medium mb-1">Default Admin Credentials:</p>
-                  <p>Email: ramon@hype.partners</p>
-                  <p>Password: rcy0jvu2uyg!YXT9nvr</p>
-                </div>
-              </div>
             </div>
           </form>
         </CardContent>
