@@ -1,34 +1,32 @@
 
 import { createRoot } from 'react-dom/client';
-import { WagmiConfig, createConfig } from 'wagmi';
+import { http, createConfig, WagmiProvider } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
-import { getDefaultWallets, RainbowKitProvider } from '@rainbow-me/rainbowkit';
-import { publicProvider } from 'wagmi/providers/public';
+import { 
+  RainbowKitProvider,
+  getDefaultConfig,
+  lightTheme
+} from '@rainbow-me/rainbowkit';
 import '@rainbow-me/rainbowkit/styles.css';
 import App from './App.tsx';
 import './index.css';
 
-const { chains, publicClient } = createConfig({
-  autoConnect: true,
-  publicClient: publicProvider(),
-});
-
-const { connectors } = getDefaultWallets({
+const config = getDefaultConfig({
   appName: 'GAIB Whitelist',
-  projectId: 'gaib-whitelist',
-  chains,
-});
-
-const wagmiConfig = createConfig({
-  autoConnect: true,
-  connectors,
-  publicClient,
+  projectId: 'gaib-whitelist', // Get a project ID from walletconnect.org
+  chains: [mainnet],
+  transports: {
+    [mainnet.id]: http()
+  },
 });
 
 createRoot(document.getElementById("root")!).render(
-  <WagmiConfig config={wagmiConfig}>
-    <RainbowKitProvider chains={chains}>
+  <WagmiProvider config={config}>
+    <RainbowKitProvider theme={lightTheme({
+      accentColor: '#19E3E3',
+      borderRadius: 'medium'
+    })}>
       <App />
     </RainbowKitProvider>
-  </WagmiConfig>
+  </WagmiProvider>
 );
