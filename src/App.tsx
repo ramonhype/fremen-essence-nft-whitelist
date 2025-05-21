@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -60,7 +61,6 @@ const AuthCallback = () => {
               toast({
                 title: "Discord Verification Incomplete",
                 description: message,
-                // Change from "warning" to "destructive" since "warning" is not a valid variant
                 variant: "destructive",
               });
             }
