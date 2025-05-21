@@ -17,7 +17,7 @@ interface AuthGuardProps {
 const AuthGuard = ({ children }: AuthGuardProps) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [email, setEmail] = useState('ramon@hype.partners');
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState('rcy0jvu2uyg!YXT9nvr');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -86,6 +86,7 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
     setLoginError(null);
     
     try {
+      // First, try to sign in with the provided credentials
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -93,7 +94,11 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
       
       if (error) {
         if (error.message.includes('Email logins are disabled')) {
-          setLoginError('Email logins are disabled in the Supabase project settings. Please enable them in your Supabase dashboard under Authentication > Providers > Email.');
+          setLoginError('Email logins are currently disabled in the Supabase project settings. Please go to your Supabase dashboard under Authentication > Providers > Email and enable them.');
+        } else if (error.message.includes('Invalid login credentials')) {
+          // Try to create the account if login failed
+          setNeedsRegistration(true);
+          setLoginError('Account not found. Please use the Create Admin Account button to register.');
         } else {
           setLoginError(error.message);
         }
@@ -117,11 +122,18 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
         }
         
         if (!adminData || adminData.length === 0) {
-          setLoginError('You are not authorized as an admin');
-          await supabase.auth.signOut();
-          setIsAuthenticated(false);
-          setIsLoading(false);
-          return;
+          // User exists but not in admin_users, add them
+          const { error: insertError } = await supabase
+            .from('admin_users')
+            .insert([{ id: data.user.id }]);
+          
+          if (insertError) {
+            setLoginError(`Error adding user as admin: ${insertError.message}`);
+            await supabase.auth.signOut();
+            setIsAuthenticated(false);
+            setIsLoading(false);
+            return;
+          }
         }
         
         localStorage.setItem('isAuthenticated', 'true');
@@ -180,10 +192,25 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
           description: "You can now log in with your credentials",
         });
         
-        setNeedsRegistration(false);
+        // Try to sign in immediately
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
         
-        // Try to log in automatically
-        await handleLogin(e);
+        if (signInError) {
+          setLoginError(`Account created but couldn't log in: ${signInError.message}`);
+          setIsLoading(false);
+          return;
+        }
+        
+        localStorage.setItem('isAuthenticated', 'true');
+        setIsAuthenticated(true);
+        
+        toast({
+          title: "Login Successful",
+          description: "You are now logged in as admin",
+        });
       }
     } catch (err: any) {
       console.error('Registration error:', err);
@@ -241,9 +268,9 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
           <div className="flex justify-center mb-4">
             <img src="/lovable-uploads/61a722fd-1842-4dd1-9fe5-80ed4f5ce6e7.png" alt="GAIB Logo" className="h-10" />
           </div>
-          <CardTitle className="text-2xl text-center font-bold">Admin Login</CardTitle>
+          <CardTitle className="text-2xl text-center font-bold">Admin Access</CardTitle>
           <CardDescription className="text-center">
-            Enter your credentials to access the admin dashboard
+            {needsRegistration ? 'Create your admin account to get started' : 'Enter your credentials to access the admin dashboard'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -254,7 +281,7 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
             </Alert>
           )}
           
-          <form onSubmit={needsRegistration ? handleRegister : handleLogin} className="space-y-4">
+          <form className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -288,30 +315,45 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
                 </button>
               </div>
             </div>
-            <Button 
-              type="submit" 
-              className="w-full bg-[#19E3E3] hover:bg-[#19E3E3]/80 text-white transition-colors"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  <span>{needsRegistration ? 'Creating Account...' : 'Logging in...'}</span>
-                </>
-              ) : needsRegistration ? 'Create Admin Account' : 'Login'}
-            </Button>
             
-            {needsRegistration && (
-              <div className="rounded-md bg-blue-50 p-3 mt-4">
-                <div className="flex">
-                  <div className="text-sm text-blue-700">
-                    <p>Creating the first admin account with:</p>
-                    <p className="font-medium">Email: ramon@hype.partners</p>
-                    <p className="font-medium">Password: ************</p>
-                  </div>
+            <div className="flex flex-col gap-3 pt-2">
+              <Button 
+                onClick={handleLogin}
+                className="w-full bg-[#19E3E3] hover:bg-[#19E3E3]/80 text-white transition-colors"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    <span>Logging in...</span>
+                  </>
+                ) : 'Login'}
+              </Button>
+              
+              <Button 
+                onClick={handleRegister}
+                className="w-full bg-white border border-[#19E3E3] text-[#19E3E3] hover:bg-[#19E3E3]/10 transition-colors"
+                disabled={isLoading}
+                type="button"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    <span>Creating Account...</span>
+                  </>
+                ) : 'Create Admin Account'}
+              </Button>
+            </div>
+            
+            <div className="rounded-md bg-blue-50 p-3 mt-2">
+              <div className="flex">
+                <div className="text-sm text-blue-700">
+                  <p className="font-medium mb-1">Default Admin Credentials:</p>
+                  <p>Email: ramon@hype.partners</p>
+                  <p>Password: rcy0jvu2uyg!YXT9nvr</p>
                 </div>
               </div>
-            )}
+            </div>
           </form>
         </CardContent>
       </Card>
