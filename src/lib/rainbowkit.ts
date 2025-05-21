@@ -25,10 +25,13 @@ import { publicProvider } from 'wagmi/providers/public';
 
 const projectId = 'YOUR_PROJECT_ID'; // Replace with your WalletConnect project ID
 
-// Configure chains correctly with the publicProvider
+// Fix the chains configuration with a properly imported publicProvider
 const { chains, publicClient } = configureChains(
   [mainnet, polygon, optimism, arbitrum],
-  [publicProvider()]
+  [
+    // Make sure we're calling the function correctly
+    publicProvider()
+  ]
 );
 
 const connectors = connectorsForWallets([
