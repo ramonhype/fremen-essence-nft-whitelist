@@ -4,8 +4,8 @@ import { Wallet } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 
 interface WalletDisplayProps {
-  address: string | undefined;
-  isConnected: boolean;
+  address?: string;
+  isConnected?: boolean;
 }
 
 const WalletDisplay = ({ address, isConnected }: WalletDisplayProps) => {
@@ -15,7 +15,7 @@ const WalletDisplay = ({ address, isConnected }: WalletDisplayProps) => {
       <div className="flex items-center p-3 rounded-md bg-nft-muted border border-nft-border">
         <Wallet className="h-4 w-4 mr-2 text-nft-primary" />
         <span className="text-sm font-mono truncate">
-          {isConnected ? address : "Please connect your wallet"}
+          {isConnected ? address : "Wallet connection disabled"}
         </span>
       </div>
     </div>
