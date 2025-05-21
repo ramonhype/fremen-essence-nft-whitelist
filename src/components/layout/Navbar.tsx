@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 const Navbar = () => {
   return (
@@ -13,7 +12,7 @@ const Navbar = () => {
           </Link>
         </div>
         <div className="flex items-center gap-4">
-          <ConnectButton />
+          {/* Wallet connection button removed */}
         </div>
       </div>
     </header>

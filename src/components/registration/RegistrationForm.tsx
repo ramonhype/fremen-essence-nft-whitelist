@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { toast } from "@/hooks/use-toast";
 import { 
@@ -11,7 +12,6 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { checkDiscordVerification, updateDiscordVerificationStatus } from "@/utils/discordVerification";
-import { useAccount } from 'wagmi';
 
 import WalletDisplay from './WalletDisplay';
 import XVerification from './XVerification';
@@ -19,8 +19,6 @@ import DiscordVerification from './DiscordVerification';
 import PasswordVerification from './PasswordVerification';
 
 const RegistrationForm = () => {
-  const { address, isConnected } = useAccount();
-
   const [password, setPassword] = useState('');
   const [isPasswordValid, setIsPasswordValid] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -96,14 +94,6 @@ const RegistrationForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isConnected) {
-      toast({
-        title: "Wallet not connected",
-        description: "Please connect your wallet to register",
-        variant: "destructive",
-      });
-      return;
-    }
 
     if (!isPasswordValid) {
       toast({
@@ -159,7 +149,7 @@ const RegistrationForm = () => {
       const { data, error } = await supabase
         .from('whitelist_registrations')
         .insert({
-          wallet_address: address,
+          wallet_address: "Manual entry", // Changed from address to placeholder
           discord_username: "", // Empty string as we're using OAuth
           discord_verified: isDiscordVerified,
           password_id: passwordData.id,
@@ -233,7 +223,7 @@ const RegistrationForm = () => {
             <Button 
               type="submit" 
               className="w-full bg-[#19E3E3] hover:bg-[#19E3E3]/80 text-white transition-colors"
-              disabled={!isConnected || !isPasswordValid || isLoading || !isDiscordVerified || !isXVerified}
+              disabled={!isPasswordValid || isLoading || !isDiscordVerified || !isXVerified}
             >
               {isLoading ? (
                 <>
