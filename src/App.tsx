@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { checkDiscordVerification } from "@/utils/discordVerification";
 
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
@@ -47,10 +48,22 @@ const AuthCallback = () => {
           } else if (session) {
             // Session established successfully
             console.log("Auth successful, session established");
-            toast({
-              title: "Authentication Successful",
-              description: "Your Discord account has been verified",
-            });
+            
+            // Check Discord server membership
+            const { verified, message } = await checkDiscordVerification();
+            
+            if (verified) {
+              toast({
+                title: "Authentication Successful",
+                description: "Your Discord account has been verified",
+              });
+            } else {
+              toast({
+                title: "Discord Verification Incomplete",
+                description: message,
+                variant: "warning",
+              });
+            }
           }
         }
       } catch (err) {

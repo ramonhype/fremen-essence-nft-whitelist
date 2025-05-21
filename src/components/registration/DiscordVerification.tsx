@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { MessagesSquare, CheckCircle2, Loader2, ExternalLink } from 'lucide-react';
-import { signInWithDiscord, checkDiscordVerification } from "@/utils/discordVerification";
+import { MessagesSquare, CheckCircle2, Loader2, ExternalLink, AlertTriangle } from 'lucide-react';
+import { signInWithDiscord, checkDiscordVerification, DISCORD_SERVER_TO_JOIN } from "@/utils/discordVerification";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -15,15 +15,21 @@ interface DiscordVerificationProps {
 const DiscordVerification = ({ isVerified, onVerificationChange }: DiscordVerificationProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
   
   // Check verification status on mount and auth state changes
   useEffect(() => {
     const checkStatus = async () => {
       setCheckingStatus(true);
+      setVerificationError(null);
       try {
         console.log("Checking Discord verification status");
-        const { verified } = await checkDiscordVerification();
-        console.log("Discord verification status:", verified);
+        const { verified, message } = await checkDiscordVerification();
+        console.log("Discord verification status:", verified, message);
+        
+        if (!verified && message.includes("join")) {
+          setVerificationError(message);
+        }
         
         if (onVerificationChange) {
           onVerificationChange(verified);
@@ -45,8 +51,17 @@ const DiscordVerification = ({ isVerified, onVerificationChange }: DiscordVerifi
         // Use setTimeout to avoid Supabase auth deadlock
         setTimeout(async () => {
           try {
-            const { verified } = await checkDiscordVerification();
-            console.log("After signin verification status:", verified);
+            const { verified, message } = await checkDiscordVerification();
+            console.log("After signin verification status:", verified, message);
+            
+            if (!verified && message.includes("join")) {
+              setVerificationError(message);
+              toast({
+                title: "Discord Server Required",
+                description: "Please join the GAIB Discord server",
+                variant: "destructive",
+              });
+            }
             
             if (onVerificationChange) {
               onVerificationChange(verified);
@@ -59,6 +74,7 @@ const DiscordVerification = ({ isVerified, onVerificationChange }: DiscordVerifi
         if (onVerificationChange) {
           onVerificationChange(false);
         }
+        setVerificationError(null);
       }
     });
     
@@ -140,25 +156,47 @@ const DiscordVerification = ({ isVerified, onVerificationChange }: DiscordVerifi
           </span>
         </div>
       ) : (
-        <Button 
-          type="button" 
-          variant="secondary" 
-          onClick={handleDiscordVerification}
-          disabled={isLoading}
-          className="w-full flex items-center justify-center gap-2 bg-[#19E3E3] hover:bg-[#19E3E3]/80 text-white"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Verifying...</span>
-            </>
-          ) : (
-            <>
-              <MessagesSquare className="h-4 w-4" />
-              <span>Verify with Discord</span>
-            </>
+        <div className="space-y-2">
+          {verificationError && (
+            <div className="flex items-center p-3 rounded-md border border-amber-500 bg-amber-50 dark:bg-amber-900/20">
+              <AlertTriangle className="h-5 w-5 text-amber-500 mr-2 flex-shrink-0" />
+              <div className="space-y-1">
+                <p className="text-amber-700 dark:text-amber-300">
+                  {verificationError}
+                </p>
+                <div>
+                  <button 
+                    onClick={openDiscordServer}
+                    className="text-xs text-[#19E3E3] hover:underline inline-flex items-center"
+                  >
+                    Click here to join the server
+                    <ExternalLink className="h-3 w-3 ml-1" />
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
-        </Button>
+          
+          <Button 
+            type="button" 
+            variant="secondary" 
+            onClick={handleDiscordVerification}
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-2 bg-[#19E3E3] hover:bg-[#19E3E3]/80 text-white"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Verifying...</span>
+              </>
+            ) : (
+              <>
+                <MessagesSquare className="h-4 w-4" />
+                <span>Verify with Discord</span>
+              </>
+            )}
+          </Button>
+        </div>
       )}
     </div>
   );
