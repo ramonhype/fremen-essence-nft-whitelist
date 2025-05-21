@@ -237,7 +237,7 @@ const RegistrationForm = () => {
           <div className="mt-6">
             <Button 
               type="submit" 
-              className="w-full bg-[#8b5cf6] hover:bg-[#8b5cf6]/80 text-white transition-colors"
+              className="w-full bg-[#19E3E3] hover:bg-[#19E3E3]/80 text-white transition-colors"
               disabled={!isConnected || !isPasswordValid || isLoading || !isDiscordVerified || !isXVerified}
             >
               {isLoading ? (

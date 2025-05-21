@@ -13,7 +13,7 @@ const Index = () => {
             <div>
               <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-black">
                 Secure your whitelist for our
-                <span className="block text-[#4F9AF4]">
+                <span className="block text-[#19E3E3]">
                   Fremen Essence NFT
                 </span>
                 <span className="block">
@@ -29,7 +29,7 @@ const Index = () => {
             
             <div className="flex flex-col sm:flex-row gap-4">
               <Button 
-                className="bg-[#4F9AF4] hover:bg-[#4F9AF4]/80 text-white transition-colors"
+                className="bg-[#19E3E3] hover:bg-[#19E3E3]/80 text-white transition-colors"
                 onClick={() => window.open('https://aid.gaib.ai/', '_blank')}
               >
                 Learn More

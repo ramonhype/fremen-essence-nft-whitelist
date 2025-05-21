@@ -123,7 +123,7 @@ const DiscordVerification = ({ isVerified, onVerificationChange }: DiscordVerifi
           (must be a member of{" "}
           <button 
             onClick={openDiscordServer}
-            className="text-[#4F9AF4] hover:underline inline-flex items-center"
+            className="text-[#19E3E3] hover:underline inline-flex items-center"
           >
             GAIB's Discord
             <ExternalLink className="h-3 w-3 ml-1" />
@@ -145,7 +145,7 @@ const DiscordVerification = ({ isVerified, onVerificationChange }: DiscordVerifi
           variant="secondary" 
           onClick={handleDiscordVerification}
           disabled={isLoading}
-          className="w-full flex items-center justify-center gap-2 bg-[#4F9AF4] hover:bg-[#4F9AF4]/80 text-white"
+          className="w-full flex items-center justify-center gap-2 bg-[#19E3E3] hover:bg-[#19E3E3]/80 text-white"
         >
           {isLoading ? (
             <>

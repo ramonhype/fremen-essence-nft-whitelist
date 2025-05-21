@@ -41,7 +41,7 @@ const XVerification = ({ isVerified, onVerificationChange }: XVerificationProps)
           type="button" 
           variant="secondary" 
           onClick={handleXVerification}
-          className="w-full flex items-center justify-center gap-2 bg-[#4F9AF4] hover:bg-[#4F9AF4]/80 text-white"
+          className="w-full flex items-center justify-center gap-2 bg-[#19E3E3] hover:bg-[#19E3E3]/80 text-white"
         >
           <ExternalLink className="h-4 w-4" />
           <span>Follow us on X (GAIB X)</span>
