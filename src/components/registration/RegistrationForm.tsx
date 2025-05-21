@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from 'react';
-import { useAccount } from 'wagmi';
 import { toast } from "@/hooks/use-toast";
 import { 
   Card, 
@@ -20,7 +19,10 @@ import DiscordVerification from './DiscordVerification';
 import PasswordVerification from './PasswordVerification';
 
 const RegistrationForm = () => {
-  const { address, isConnected } = useAccount();
+  // Mock the wallet connection state (replaced wagmi's useAccount)
+  const [address, setAddress] = useState<string | undefined>("0x1234...5678"); // Mock address
+  const [isConnected, setIsConnected] = useState(true); // Set to true for testing
+
   const [password, setPassword] = useState('');
   const [isPasswordValid, setIsPasswordValid] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
