@@ -41,11 +41,11 @@ const Index = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-white/30 p-4 rounded-md border border-black/10">
                   <div className="text-sm text-black/80">Whitelist Opens</div>
-                  <div className="font-semibold text-black">May 16, 2025</div>
+                  <div className="font-semibold text-black">May 26, 2025</div>
                 </div>
                 <div className="bg-white/30 p-4 rounded-md border border-black/10">
                   <div className="text-sm text-black/80">Whitelist Closes</div>
-                  <div className="font-semibold text-black">June 15, 2025</div>
+                  <div className="font-semibold text-black">June, 2025</div>
                 </div>
                 <div className="bg-white/30 p-4 rounded-md border border-black/10">
                   <div className="text-sm text-black/80">Public Mint</div>
