@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 const Navbar = () => {
   return (
@@ -8,16 +9,11 @@ const Navbar = () => {
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-6">
           <Link to="/" className="flex items-center gap-2">
-            <img src="/lovable-uploads/a3ea4fc0-78c8-4624-989a-5c56513c125f.png" alt="GAIB Logo" className="h-8" />
+            <img src="/lovable-uploads/61a722fd-1842-4dd1-9fe5-80ed4f5ce6e7.png" alt="GAIB Logo" className="h-8" />
           </Link>
-          <nav className="flex items-center gap-6">
-            <Link to="https://gaib.ai/" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-black hover:text-[#4F9AF4] transition-colors">
-              GAIB
-            </Link>
-          </nav>
         </div>
         <div className="flex items-center gap-4">
-          {/* Wallet connection button removed */}
+          <ConnectButton />
         </div>
       </div>
     </header>

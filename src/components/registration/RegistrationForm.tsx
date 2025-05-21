@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { toast } from "@/hooks/use-toast";
 import { 
@@ -12,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { checkDiscordVerification, updateDiscordVerificationStatus } from "@/utils/discordVerification";
+import { useAccount } from 'wagmi';
 
 import WalletDisplay from './WalletDisplay';
 import XVerification from './XVerification';
@@ -19,9 +19,7 @@ import DiscordVerification from './DiscordVerification';
 import PasswordVerification from './PasswordVerification';
 
 const RegistrationForm = () => {
-  // Mock the wallet connection state (replaced wagmi's useAccount)
-  const [address, setAddress] = useState<string | undefined>("0x1234...5678"); // Mock address
-  const [isConnected, setIsConnected] = useState(true); // Set to true for testing
+  const { address, isConnected } = useAccount();
 
   const [password, setPassword] = useState('');
   const [isPasswordValid, setIsPasswordValid] = useState(false);
@@ -157,7 +155,7 @@ const RegistrationForm = () => {
         return;
       }
       
-      // Insert registration data - now explicitly setting name to null
+      // Insert registration data
       const { data, error } = await supabase
         .from('whitelist_registrations')
         .insert({
@@ -165,7 +163,7 @@ const RegistrationForm = () => {
           discord_username: "", // Empty string as we're using OAuth
           discord_verified: isDiscordVerified,
           password_id: passwordData.id,
-          name: null // Explicitly set name to null since we've made it nullable
+          name: null
         })
         .select('id')
         .single();
@@ -214,10 +212,7 @@ const RegistrationForm = () => {
       <CardContent>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
-            <WalletDisplay 
-              address={address} 
-              isConnected={isConnected} 
-            />
+            <WalletDisplay />
 
             <XVerification 
               isVerified={isXVerified}
