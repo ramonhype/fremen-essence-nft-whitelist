@@ -11,7 +11,6 @@ import { checkDiscordVerification } from "@/utils/discordVerification";
 
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
-import Auth from "./components/auth/Auth";
 import NotFound from "./pages/NotFound";
 import AuthGuard from "./components/auth/AuthGuard";
 import TermsOfService from "./pages/TermsOfService";
@@ -99,7 +98,6 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Auth />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/admin" element={
             <AuthGuard>
