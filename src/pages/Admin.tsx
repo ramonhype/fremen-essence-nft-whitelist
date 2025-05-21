@@ -78,9 +78,9 @@ const Admin = () => {
       </header>
       
       <div className="container py-12 px-4 relative z-10">
-        <div className="bg-gray-800/80 backdrop-blur-md shadow-md rounded-lg border border-gray-700 p-6">
+        <div className="bg-[#2A2F3D]/95 backdrop-blur-md shadow-md rounded-lg border border-[#394052] p-6">
           <Tabs defaultValue="passwords" className="w-full">
-            <TabsList className="grid w-full md:w-[400px] grid-cols-2 mb-6 bg-gray-700/50">
+            <TabsList className="grid w-full md:w-[400px] grid-cols-2 mb-6 bg-[#1F2333]">
               <TabsTrigger 
                 value="passwords" 
                 className="data-[state=active]:bg-[#19E3E3] data-[state=active]:text-black"

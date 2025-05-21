@@ -56,6 +56,8 @@ const CreatePasswordForm = ({ onPasswordCreated, onError }: CreatePasswordFormPr
     try {
       // Check if we have an authenticated session first
       const { data: sessionData } = await supabase.auth.getSession();
+      console.log("Session before creating password:", sessionData);
+      
       if (!sessionData?.session) {
         throw new Error("You must be logged in to create passwords");
       }
@@ -97,7 +99,7 @@ const CreatePasswordForm = ({ onPasswordCreated, onError }: CreatePasswordFormPr
         .select();
         
       if (insertError) {
-        console.error('Supabase error details:', insertError);
+        console.error('Supabase insert error details:', insertError);
         throw insertError;
       }
       
@@ -130,10 +132,10 @@ const CreatePasswordForm = ({ onPasswordCreated, onError }: CreatePasswordFormPr
   };
 
   return (
-    <Card className="border-nft-border bg-nft-background/60 backdrop-blur-md">
+    <Card className="border-[#394052] bg-[#1F2333] text-white">
       <CardHeader>
         <CardTitle>Create Community Password</CardTitle>
-        <CardDescription>Generate passwords for different communities</CardDescription>
+        <CardDescription className="text-gray-400">Generate passwords for different communities</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -144,12 +146,12 @@ const CreatePasswordForm = ({ onPasswordCreated, onError }: CreatePasswordFormPr
                 name="community_name"
                 render={({ field }) => (
                   <FormItem className="space-y-2">
-                    <FormLabel>Community Name</FormLabel>
+                    <FormLabel className="text-white">Community Name</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         placeholder="e.g., Discord, Twitter"
-                        className="border-nft-border bg-nft-muted focus:border-nft-primary"
+                        className="border-[#394052] bg-[#2A2F3D] text-white focus:border-[#19E3E3]"
                       />
                     </FormControl>
                     <FormMessage />
@@ -162,12 +164,12 @@ const CreatePasswordForm = ({ onPasswordCreated, onError }: CreatePasswordFormPr
                 name="password"
                 render={({ field }) => (
                   <FormItem className="space-y-2">
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel className="text-white">Password</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         placeholder="Enter secure password"
-                        className="border-nft-border bg-nft-muted focus:border-nft-primary"
+                        className="border-[#394052] bg-[#2A2F3D] text-white focus:border-[#19E3E3]"
                       />
                     </FormControl>
                     <FormMessage />
@@ -180,14 +182,14 @@ const CreatePasswordForm = ({ onPasswordCreated, onError }: CreatePasswordFormPr
                 name="max_uses"
                 render={({ field }) => (
                   <FormItem className="space-y-2">
-                    <FormLabel>Max Uses (Optional)</FormLabel>
+                    <FormLabel className="text-white">Max Uses (Optional)</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         type="number" 
                         min="1"
                         placeholder="Leave empty for unlimited"
-                        className="border-nft-border bg-nft-muted focus:border-nft-primary"
+                        className="border-[#394052] bg-[#2A2F3D] text-white focus:border-[#19E3E3]"
                       />
                     </FormControl>
                     <FormMessage />
@@ -198,7 +200,7 @@ const CreatePasswordForm = ({ onPasswordCreated, onError }: CreatePasswordFormPr
             
             <Button 
               type="submit" 
-              className="mt-4 bg-nft-primary hover:bg-nft-secondary transition-colors"
+              className="mt-4 bg-[#6469FF] hover:bg-[#7478FF] text-white transition-colors"
               disabled={isLoading}
             >
               {isLoading ? (
