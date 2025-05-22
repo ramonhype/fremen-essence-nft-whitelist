@@ -29,69 +29,58 @@ const PasswordManager = () => {
   const fetchPasswords = async () => {
     try {
       setIsLoadingPasswords(true);
+      console.log("Fetching passwords...");
       
       // Check if we have an authenticated session
-      const { data: session } = await supabase.auth.getSession();
-      console.log("Current session:", session);
+      const { data: sessionData } = await supabase.auth.getSession();
       
-      if (!session?.session) {
+      if (!sessionData?.session) {
+        console.error("No authenticated session found");
         setGlobalError("You must be logged in to access password management.");
         setError("Authentication required");
+        setIsLoadingPasswords(false);
         return;
       }
       
-      console.log("About to fetch passwords with user ID:", session.session.user.id);
+      console.log("Session found, user ID:", sessionData.session.user.id);
       
+      // Fetch all passwords
       const { data, error: fetchError } = await supabase
         .from('community_passwords')
         .select('*')
         .order('created_at', { ascending: false });
-        
+      
       if (fetchError) {
-        console.error('Full Supabase error:', fetchError);
+        console.error('Password fetch error:', fetchError);
         throw fetchError;
       }
       
-      console.log("Fetched passwords:", data);
+      console.log("Passwords fetched successfully:", data);
       setPasswords(data || []);
       setError(null);
       setGlobalError(null);
     } catch (err: any) {
       console.error('Error fetching passwords:', err);
       setError('Failed to load community passwords');
-      
-      // More detailed error handling
-      if (err.message && err.message.includes('infinite recursion')) {
-        setGlobalError("Database error: There's an issue with the admin permissions. Please contact the developer with this error: 'Infinite recursion in admin_users policy'");
-      } else if (err.message && err.message.includes('row-level security')) {
-        setGlobalError("Permission error: Your account doesn't have access to manage passwords.");
-      } else {
-        setGlobalError(err.message || "Unknown error occurred");
-      }
+      setGlobalError(err.message || "Unknown error occurred");
     } finally {
       setIsLoadingPasswords(false);
     }
   };
 
   const handlePasswordCreated = (newPassword: Password) => {
+    console.log("New password created:", newPassword);
     setPasswords([newPassword, ...passwords]);
-    setGlobalError(null);
   };
 
   const handlePasswordDeleted = (id: string) => {
+    console.log("Password deleted with ID:", id);
     setPasswords(passwords.filter(p => p.id !== id));
   };
 
   const handlePasswordError = (errorMessage: string) => {
     console.error("Password error:", errorMessage);
-    
-    if (errorMessage.includes('infinite recursion')) {
-      setGlobalError("Database error: There's an issue with the admin permissions. Please contact the developer.");
-    } else if (errorMessage.includes('row-level security')) {
-      setGlobalError("Permission error: Your account doesn't have access to manage passwords.");
-    } else {
-      setGlobalError(errorMessage);
-    }
+    setGlobalError(errorMessage);
   };
 
   return (

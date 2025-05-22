@@ -60,6 +60,7 @@ const PasswordsList = ({
   const handleDeletePassword = async (id: string) => {
     try {
       setDeletingId(id);
+      console.log("Attempting to delete password with ID:", id);
       
       // Check if we have an authenticated session first
       const { data: sessionData } = await supabase.auth.getSession();
@@ -67,13 +68,19 @@ const PasswordsList = ({
         throw new Error("You must be logged in to delete passwords");
       }
       
+      console.log("Authenticated session confirmed, proceeding with deletion");
+      
       const { error: deleteError } = await supabase
         .from('community_passwords')
         .delete()
         .eq('id', id);
         
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        console.error("Delete error:", deleteError);
+        throw deleteError;
+      }
       
+      console.log("Password deleted successfully");
       onPasswordDeleted(id);
       
       toast({
@@ -127,55 +134,56 @@ const PasswordsList = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {passwords.map((entry) => (
-                  <TableRow key={entry.id} className="hover:bg-[#343B4F] border-b border-[#394052]">
-                    <TableCell className="font-medium text-white">{entry.community_name}</TableCell>
-                    <TableCell className="font-mono text-[#19E3E3]">{entry.password}</TableCell>
-                    <TableCell className="text-gray-300">{formatDate(entry.created_at)}</TableCell>
-                    <TableCell className="text-gray-300">
-                      {entry.current_uses || 0}
-                      {entry.max_uses !== null && ` / ${entry.max_uses}`}
-                      {entry.max_uses === null && ' (∞)'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={deletingId === entry.id}
-                            className="hover:bg-red-900/30"
-                          >
-                            {deletingId === entry.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash className="h-4 w-4 text-red-400" />
-                            )}
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="bg-[#2A2F3D] border-[#394052] text-white">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Password</AlertDialogTitle>
-                            <AlertDialogDescription className="text-gray-400">
-                              Are you sure you want to delete the password for {entry.community_name}? 
-                              This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel className="border-[#394052] bg-[#1F2333] text-white hover:bg-[#343B4F]">Cancel</AlertDialogCancel>
-                            <AlertDialogAction 
-                              onClick={() => handleDeletePassword(entry.id)}
-                              className="bg-red-600 text-white hover:bg-red-700"
+                {passwords.length > 0 ? (
+                  passwords.map((entry) => (
+                    <TableRow key={entry.id} className="hover:bg-[#343B4F] border-b border-[#394052]">
+                      <TableCell className="font-medium text-white">{entry.community_name}</TableCell>
+                      <TableCell className="font-mono text-[#19E3E3]">{entry.password}</TableCell>
+                      <TableCell className="text-gray-300">{formatDate(entry.created_at)}</TableCell>
+                      <TableCell className="text-gray-300">
+                        {entry.current_uses || 0}
+                        {entry.max_uses !== null && ` / ${entry.max_uses}`}
+                        {entry.max_uses === null && ' (∞)'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              disabled={deletingId === entry.id}
+                              className="hover:bg-red-900/30"
                             >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {passwords.length === 0 && (
+                              {deletingId === entry.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash className="h-4 w-4 text-red-400" />
+                              )}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="bg-[#2A2F3D] border-[#394052] text-white">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Password</AlertDialogTitle>
+                              <AlertDialogDescription className="text-gray-400">
+                                Are you sure you want to delete the password for {entry.community_name}? 
+                                This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel className="border-[#394052] bg-[#1F2333] text-white hover:bg-[#343B4F]">Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDeletePassword(entry.id)}
+                                className="bg-red-600 text-white hover:bg-red-700"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-4 text-gray-400">
                       No passwords created yet

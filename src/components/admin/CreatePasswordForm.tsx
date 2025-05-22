@@ -9,7 +9,6 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
@@ -78,7 +77,7 @@ const CreatePasswordForm = ({ onPasswordCreated, onError }: CreatePasswordFormPr
       }
 
       // Log the data we're trying to insert
-      console.log('Inserting password with data:', {
+      console.log('Creating password with data:', {
         password: values.password,
         community_name: values.community_name,
         max_uses: parsedMaxUses,
@@ -102,6 +101,8 @@ const CreatePasswordForm = ({ onPasswordCreated, onError }: CreatePasswordFormPr
         console.error('Supabase insert error details:', insertError);
         throw insertError;
       }
+      
+      console.log("Insert response:", data);
       
       if (data && data.length > 0) {
         console.log("Successfully created password:", data[0]);

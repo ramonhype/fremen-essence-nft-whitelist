@@ -1,9 +1,9 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { LogOut } from 'lucide-react';
+import { LogOut, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import PasswordManager from '@/components/admin/PasswordManager';
@@ -11,6 +11,36 @@ import WhitelistEntries from '@/components/admin/WhitelistEntries';
 
 const Admin = () => {
   const navigate = useNavigate();
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        // Double check we have a real session
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        
+        if (!data.session) {
+          console.log("No valid session found, redirecting to login");
+          toast({
+            title: "Authentication Required",
+            description: "Please log in to access the admin dashboard",
+            variant: "destructive",
+          });
+          navigate('/');
+        } else {
+          console.log("Valid session found for user:", data.session.user.id);
+        }
+      } catch (error) {
+        console.error("Auth check error:", error);
+        navigate('/');
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+    
+    checkAuth();
+  }, [navigate]);
   
   const handleLogout = async () => {
     try {
@@ -30,6 +60,17 @@ const Admin = () => {
       });
     }
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#F4D3AF]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-[#19E3E3]" />
+          <p className="text-lg">Verifying authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F4D3AF] relative">

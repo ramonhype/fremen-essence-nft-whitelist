@@ -25,16 +25,24 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
   // Check if user is already authenticated on component mount
   useEffect(() => {
     const checkAuth = async () => {
-      // Check if user is authenticated with Supabase
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session) {
-        localStorage.setItem('isAuthenticated', 'true');
-        setIsAuthenticated(true);
-      } else {
-        // Fallback to localStorage check for backward compatibility
-        const authStatus = localStorage.getItem('isAuthenticated') === 'true';
-        setIsAuthenticated(authStatus);
+      try {
+        // Check if user is authenticated with Supabase
+        const { data } = await supabase.auth.getSession();
+        console.log("Auth check - session data:", data);
+        
+        if (data?.session) {
+          console.log("Valid session found, user ID:", data.session.user.id);
+          localStorage.setItem('isAuthenticated', 'true');
+          setIsAuthenticated(true);
+        } else {
+          console.log("No valid session found");
+          // Fallback to localStorage check for backward compatibility
+          const authStatus = localStorage.getItem('isAuthenticated') === 'true';
+          setIsAuthenticated(authStatus);
+        }
+      } catch (error) {
+        console.error("Error checking authentication:", error);
+        setIsAuthenticated(false);
       }
     };
     
@@ -47,6 +55,8 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
     setLoginError(null);
     
     try {
+      console.log("Attempting login with email:", email);
+      
       // Try to sign in with the provided credentials
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -54,8 +64,9 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
       });
       
       if (error) {
+        console.error("Login error:", error);
         if (error.message.includes('Email logins are disabled')) {
-          setLoginError('Email logins are currently disabled in the Supabase project settings. Please enable them in your Supabase dashboard under Authentication > Providers > Email.');
+          setLoginError('Email logins are disabled in the Supabase project settings. Please enable them in your Supabase dashboard under Authentication > Providers > Email.');
         } else if (error.message.includes('Invalid login credentials')) {
           setLoginError('Invalid login credentials. Please try again or create an admin account.');
         } else {
@@ -67,6 +78,8 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
       }
       
       if (data.user) {
+        console.log("Login successful, user ID:", data.user.id);
+        
         // Add the user to admin_users table if not already there
         const { error: adminError } = await supabase
           .from('admin_users')
@@ -75,7 +88,9 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
           .single();
         
         // It's okay if there's an error from the insert - could be a duplicate
-        // We'll proceed with authentication anyway
+        if (adminError) {
+          console.log("Admin user insert note:", adminError.message);
+        }
         
         localStorage.setItem('isAuthenticated', 'true');
         setIsAuthenticated(true);
@@ -86,7 +101,7 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
         });
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Unexpected login error:', error);
       setLoginError('An unexpected error occurred');
       setIsAuthenticated(false);
     } finally {
@@ -100,6 +115,8 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
     setLoginError(null);
     
     try {
+      console.log("Attempting to register with email:", email);
+      
       // Register the admin user
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -107,6 +124,7 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
       });
       
       if (error) {
+        console.error("Registration error:", error);
         if (error.message.includes('Email logins are disabled')) {
           setLoginError('Email logins are disabled in the Supabase project settings. Please enable them in your Supabase dashboard under Authentication > Providers > Email.');
         } else {
@@ -117,6 +135,8 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
       }
       
       if (data.user) {
+        console.log("Registration successful, user ID:", data.user.id);
+        
         // No need to check for admin status - just add the user to admin_users
         const { error: adminError } = await supabase
           .from('admin_users')
@@ -125,6 +145,7 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
           .single();
           
         if (adminError && !adminError.message.includes('duplicate')) {
+          console.error("Error creating admin user:", adminError);
           setLoginError(`Error creating admin: ${adminError.message}`);
           setIsLoading(false);
           return;
@@ -142,6 +163,7 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
         });
         
         if (signInError) {
+          console.error("Auto-login error after registration:", signInError);
           setLoginError(`Account created but couldn't log in: ${signInError.message}`);
           setIsLoading(false);
           return;
@@ -156,7 +178,7 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
         });
       }
     } catch (err: any) {
-      console.error('Registration error:', err);
+      console.error('Unexpected registration error:', err);
       setLoginError('An unexpected error occurred during registration');
     }
     
