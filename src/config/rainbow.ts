@@ -9,7 +9,7 @@ export const chains = [mainnet, sepolia];
 export const config = getDefaultConfig({
   appName: 'Fremen Essence NFT Whitelist',
   projectId: '36c5ad16a175c2225f0a7e61ed8592bf', // Get this from https://cloud.walletconnect.com
-  chains: chains,
+  chains,
   transports: {
     [mainnet.id]: http(),
     [sepolia.id]: http(),
