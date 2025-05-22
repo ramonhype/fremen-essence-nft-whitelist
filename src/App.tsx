@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -28,7 +29,7 @@ const AuthCallback = () => {
         // Check for hash fragment in URL (Supabase returns tokens in hash)
         const hashParams = location.hash;
         if (hashParams) {
-          console.log("Hash parameters detected - processing auth");
+          console.log("Hash parameters detected - processing auth", hashParams);
           
           // Get the current session state
           const { data: { session }, error } = await supabase.auth.getSession();
@@ -42,10 +43,11 @@ const AuthCallback = () => {
             });
           } else if (session) {
             // Session established successfully
-            console.log("Auth successful, session established");
+            console.log("Auth successful, session established", session);
             
             // Check Discord server membership
             const { verified, message } = await checkDiscordVerification();
+            console.log("Discord verification result:", verified, message);
             
             if (verified) {
               toast({
@@ -59,10 +61,24 @@ const AuthCallback = () => {
                 variant: "destructive",
               });
             }
+          } else {
+            console.log("No session found after auth callback");
+            toast({
+              title: "Authentication Failed",
+              description: "No session was established",
+              variant: "destructive",
+            });
           }
+        } else {
+          console.log("No hash parameters found in URL");
         }
       } catch (err) {
         console.error("Error processing auth callback:", err);
+        toast({
+          title: "Authentication Error",
+          description: "An unexpected error occurred during authentication",
+          variant: "destructive",
+        });
       } finally {
         setIsProcessing(false);
       }

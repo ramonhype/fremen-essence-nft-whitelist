@@ -45,12 +45,13 @@ const DiscordVerification = ({ isVerified, onVerificationChange }: DiscordVerifi
     
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state changed:", event);
+      console.log("Auth state changed:", event, !!session);
       
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         // Use setTimeout to avoid Supabase auth deadlock
         setTimeout(async () => {
           try {
+            console.log("Checking Discord verification after auth change");
             const { verified, message } = await checkDiscordVerification();
             console.log("After signin verification status:", verified, message);
             
@@ -60,6 +61,11 @@ const DiscordVerification = ({ isVerified, onVerificationChange }: DiscordVerifi
                 title: "Discord Server Required",
                 description: "Please join the GAIB Discord server",
                 variant: "destructive",
+              });
+            } else if (verified) {
+              toast({
+                title: "Discord Verified",
+                description: "Successfully verified your Discord membership",
               });
             }
             
@@ -104,6 +110,8 @@ const DiscordVerification = ({ isVerified, onVerificationChange }: DiscordVerifi
           description: error.message,
           variant: "destructive",
         });
+      } else {
+        console.log("Discord sign-in initiated successfully");
       }
     } catch (err: any) {
       console.error("Discord verification error:", err);
