@@ -25,52 +25,68 @@ const AuthCallback = () => {
     const handleAuthCallback = async () => {
       try {
         console.log("Auth callback processing");
+        console.log("URL:", window.location.href);
         
-        // Check for hash fragment in URL (Supabase returns tokens in hash)
-        const hashParams = location.hash;
-        if (hashParams) {
-          console.log("Hash parameters detected - processing auth", hashParams);
+        // Parse the hash or query string
+        const params = location.hash ? location.hash.substring(1) : location.search.substring(1);
+        
+        if (params) {
+          console.log("Auth parameters detected");
           
-          // Get the current session state
-          const { data: { session }, error } = await supabase.auth.getSession();
-          
-          if (error) {
-            console.error("Auth callback error:", error);
-            toast({
-              title: "Authentication Error",
-              description: "There was a problem verifying your Discord account",
-              variant: "destructive",
-            });
-          } else if (session) {
-            // Session established successfully
-            console.log("Auth successful, session established", session);
-            
-            // Check Discord server membership
-            const { verified, message } = await checkDiscordVerification();
-            console.log("Discord verification result:", verified, message);
-            
-            if (verified) {
-              toast({
-                title: "Authentication Successful",
-                description: "Your Discord account has been verified",
-              });
-            } else {
-              toast({
-                title: "Discord Verification Incomplete",
-                description: message,
-                variant: "destructive",
-              });
+          // Wait a moment to ensure Supabase has time to process the token
+          setTimeout(async () => {
+            try {
+              // Get the current session state
+              const { data: { session }, error } = await supabase.auth.getSession();
+              
+              if (error) {
+                console.error("Auth callback error:", error);
+                toast({
+                  title: "Authentication Error",
+                  description: "There was a problem verifying your Discord account: " + error.message,
+                  variant: "destructive",
+                });
+                setIsProcessing(false);
+                return;
+              }
+              
+              if (session) {
+                // Session established successfully
+                console.log("Auth successful, session established", session);
+                
+                // Check Discord server membership
+                const { verified, message } = await checkDiscordVerification();
+                console.log("Discord verification result:", verified, message);
+                
+                if (verified) {
+                  toast({
+                    title: "Authentication Successful",
+                    description: "Your Discord account has been verified",
+                  });
+                } else {
+                  toast({
+                    title: "Discord Verification Incomplete",
+                    description: message,
+                    variant: "destructive",
+                  });
+                }
+              } else {
+                console.log("No session found after auth callback");
+                toast({
+                  title: "Authentication Failed",
+                  description: "No session was established",
+                  variant: "destructive",
+                });
+              }
+              setIsProcessing(false);
+            } catch (innerError) {
+              console.error("Error in delayed processing:", innerError);
+              setIsProcessing(false);
             }
-          } else {
-            console.log("No session found after auth callback");
-            toast({
-              title: "Authentication Failed",
-              description: "No session was established",
-              variant: "destructive",
-            });
-          }
+          }, 500);
         } else {
-          console.log("No hash parameters found in URL");
+          console.log("No auth parameters found in URL");
+          setIsProcessing(false);
         }
       } catch (err) {
         console.error("Error processing auth callback:", err);
@@ -79,13 +95,12 @@ const AuthCallback = () => {
           description: "An unexpected error occurred during authentication",
           variant: "destructive",
         });
-      } finally {
         setIsProcessing(false);
       }
     };
     
     handleAuthCallback();
-  }, [location]);
+  }, [location, navigate]);
   
   if (isProcessing) {
     return (

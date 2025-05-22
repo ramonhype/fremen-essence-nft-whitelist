@@ -74,13 +74,16 @@ const DiscordVerification = ({ isVerified, onVerificationChange }: DiscordVerifi
             }
           } catch (err) {
             console.error("Error checking Discord verification after auth change:", err);
+          } finally {
+            setCheckingStatus(false);
           }
-        }, 0);
+        }, 500);
       } else if (event === 'SIGNED_OUT') {
         if (onVerificationChange) {
           onVerificationChange(false);
         }
         setVerificationError(null);
+        setCheckingStatus(false);
       }
     });
     
@@ -100,6 +103,7 @@ const DiscordVerification = ({ isVerified, onVerificationChange }: DiscordVerifi
       
       // Log current URL for debugging
       console.log("Current origin:", window.location.origin);
+      console.log("Full URL:", window.location.href);
       
       const { error } = await signInWithDiscord();
       
