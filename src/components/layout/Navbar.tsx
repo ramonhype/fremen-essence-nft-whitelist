@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
+import WalletConnect from '../wallet/WalletConnect';
 
 const Navbar = () => {
   return (
@@ -12,7 +13,7 @@ const Navbar = () => {
           </Link>
         </div>
         <div className="flex items-center gap-4">
-          {/* Wallet connection button removed */}
+          <WalletConnect />
         </div>
       </div>
     </header>

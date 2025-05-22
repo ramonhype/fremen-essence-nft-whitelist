@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { checkDiscordVerification, updateDiscordVerificationStatus } from "@/utils/discordVerification";
+import { useAccount } from 'wagmi';
 
 import WalletDisplay from './WalletDisplay';
 import XVerification from './XVerification';
@@ -25,6 +26,18 @@ const RegistrationForm = () => {
   const [isXVerified, setIsXVerified] = useState(false);
   const [isDiscordVerified, setIsDiscordVerified] = useState(false);
   const [registrationId, setRegistrationId] = useState<string | null>(null);
+  const [walletAddress, setWalletAddress] = useState<string>('');
+  
+  const { address, isConnected } = useAccount();
+  
+  // Update wallet address when connected
+  useEffect(() => {
+    if (isConnected && address) {
+      setWalletAddress(address);
+    } else {
+      setWalletAddress('');
+    }
+  }, [address, isConnected]);
   
   // Check for Discord verification on mount and auth state changes
   useEffect(() => {
@@ -92,8 +105,21 @@ const RegistrationForm = () => {
     setPassword(verifiedPassword);
   };
 
+  const handleWalletChange = (address: string) => {
+    setWalletAddress(address);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!walletAddress) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet first",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (!isPasswordValid) {
       toast({
@@ -149,7 +175,7 @@ const RegistrationForm = () => {
       const { data, error } = await supabase
         .from('whitelist_registrations')
         .insert({
-          wallet_address: "Manual entry", // Changed from address to placeholder
+          wallet_address: walletAddress,
           discord_username: "", // Empty string as we're using OAuth
           discord_verified: isDiscordVerified,
           password_id: passwordData.id,
@@ -202,7 +228,7 @@ const RegistrationForm = () => {
       <CardContent>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
-            <WalletDisplay />
+            <WalletDisplay onWalletChange={handleWalletChange} />
 
             <XVerification 
               isVerified={isXVerified}
@@ -223,7 +249,7 @@ const RegistrationForm = () => {
             <Button 
               type="submit" 
               className="w-full bg-[#19E3E3] hover:bg-[#19E3E3]/80 text-white transition-colors"
-              disabled={!isPasswordValid || isLoading || !isDiscordVerified || !isXVerified}
+              disabled={!isPasswordValid || isLoading || !isDiscordVerified || !isXVerified || !walletAddress}
             >
               {isLoading ? (
                 <>

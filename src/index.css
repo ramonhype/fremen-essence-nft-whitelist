@@ -77,6 +77,34 @@
   }
 }
 
+/* NFT theme colors - use these for components related to the NFT registry */
+:root {
+  --nft-background: 27 92% 82%;
+  --nft-foreground: 210 20% 12%;
+  --nft-primary: 175 77% 50%;
+  --nft-border: 0 0% 100% / 0.1;
+  --nft-muted: 0 0% 0% / 0.07;
+}
+
+.bg-nft-background {
+  background-color: hsl(var(--nft-background));
+}
+.text-nft-foreground {
+  color: hsl(var(--nft-foreground));
+}
+.text-nft-primary {
+  color: hsl(var(--nft-primary));
+}
+.bg-nft-primary {
+  background-color: hsl(var(--nft-primary));
+}
+.border-nft-border {
+  border-color: hsl(var(--nft-border));
+}
+.bg-nft-muted {
+  background-color: hsl(var(--nft-muted));
+}
+
 .bg-gradient-animate {
   background-size: 300% 300%;
   animation: gradient 8s ease infinite;
