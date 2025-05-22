@@ -4,8 +4,8 @@ import { http } from 'wagmi';
 import { chains } from './chains';
 
 export const config = getDefaultConfig({
-  appName: 'GAIB Whitelist',
-  projectId: 'YOUR_WALLET_CONNECT_PROJECT_ID', // Get this from https://cloud.walletconnect.com
+  appName: 'Fremen Essence NFT Whitelist',
+  projectId: '36c5ad16a175c2225f0a7e61ed8592bf', // Get this from https://cloud.walletconnect.com
   chains,
   transports: {
     [chains[0].id]: http(),
