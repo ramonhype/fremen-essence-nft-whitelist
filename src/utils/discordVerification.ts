@@ -1,9 +1,8 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 // Discord server that users need to join
 export const DISCORD_SERVER_TO_JOIN = "GAIB's Discord";
-export const DISCORD_SERVER_ID = "988467524149325824"; // This is the GAIB Discord server ID
+export const DISCORD_SERVER_ID = "1273697728014188664"; // Updated with the correct GAIB Discord server ID
 
 export interface VerifyDiscordResult {
   verified: boolean;
