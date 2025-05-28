@@ -9,9 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { checkDiscordVerification } from "@/utils/discordVerification";
 
 import Index from "./pages/Index";
-import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
-import AuthGuard from "./components/auth/AuthGuard";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 
@@ -125,11 +123,6 @@ const App = () => (
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route path="/admin" element={
-          <AuthGuard>
-            <Admin />
-          </AuthGuard>
-        } />
         <Route path="/terms-of-service" element={<TermsOfService />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="*" element={<NotFound />} />
