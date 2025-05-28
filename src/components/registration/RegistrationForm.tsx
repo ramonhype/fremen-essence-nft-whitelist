@@ -151,20 +151,41 @@ const RegistrationForm = () => {
     setIsLoading(true);
     
     try {
-      // Get password ID and check max_uses again as a safety measure
+      // Get password data and check max_uses again as a safety measure
       const { data: passwordData, error: passwordError } = await supabase
         .from('community_passwords')
-        .select('id, max_uses, current_uses')
+        .select('id, max_uses, current_uses, active')
         .eq('password', password)
+        .eq('active', true)
         .single();
       
-      if (passwordError || !passwordData) throw new Error("Password not found");
+      if (passwordError || !passwordData) {
+        console.error('Password error:', passwordError);
+        throw new Error("Password not found or inactive");
+      }
       
       // Double-check if usage limit has been reached
       if (passwordData.max_uses !== null && passwordData.current_uses >= passwordData.max_uses) {
         toast({
           title: "Registration Failed",
           description: "This password has reached its maximum usage limit",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      // Check if wallet is already registered
+      const { data: existingRegistration } = await supabase
+        .from('whitelist_registrations')
+        .select('id')
+        .eq('wallet_address', walletAddress)
+        .single();
+      
+      if (existingRegistration) {
+        toast({
+          title: "Already Registered",
+          description: "This wallet address is already registered",
           variant: "destructive",
         });
         setIsLoading(false);
@@ -185,6 +206,7 @@ const RegistrationForm = () => {
         .single();
       
       if (error) {
+        console.error('Registration error:', error);
         if (error.code === '23505') { // Unique violation
           toast({
             title: "Already Registered",
@@ -196,10 +218,15 @@ const RegistrationForm = () => {
         }
       } else {
         // Increment the current_uses counter
-        await supabase
+        const { error: updateError } = await supabase
           .from('community_passwords')
           .update({ current_uses: passwordData.current_uses + 1 })
           .eq('id', passwordData.id);
+        
+        if (updateError) {
+          console.error('Error updating password usage:', updateError);
+          // Log the error but don't fail the registration since it's already complete
+        }
         
         setRegistrationId(data.id);
         toast({
@@ -211,7 +238,7 @@ const RegistrationForm = () => {
       console.error('Registration error:', error);
       toast({
         title: "Registration Failed",
-        description: "An error occurred during registration",
+        description: "An error occurred during registration. Please try again.",
         variant: "destructive",
       });
     } finally {
