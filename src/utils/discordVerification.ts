@@ -36,7 +36,7 @@ export async function checkDiscordVerification(): Promise<VerifyDiscordResult> {
   console.log('Discord session check:', {
     hasSession: !!session,
     hasProviderToken: !!session?.provider_token,
-    provider: session?.app_metadata?.provider
+    provider: session?.user?.app_metadata?.provider
   });
   
   if (!session?.provider_token) {

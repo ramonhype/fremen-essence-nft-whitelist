@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { MessagesSquare, CheckCircle2, Loader2, ExternalLink, AlertTriangle, RefreshCw } from 'lucide-react';
+import { MessagesSquare, CheckCircle2, Loader2, ExternalLink, AlertTriangle } from 'lucide-react';
 import { signInWithDiscord, checkDiscordVerification, DISCORD_SERVER_TO_JOIN } from "@/utils/discordVerification";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,7 +16,6 @@ const DiscordVerification = ({ isVerified, onVerificationChange }: DiscordVerifi
   const [isLoading, setIsLoading] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
   const [verificationError, setVerificationError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
   
   // Check verification status on mount and auth state changes
   useEffect(() => {
@@ -97,7 +96,6 @@ const DiscordVerification = ({ isVerified, onVerificationChange }: DiscordVerifi
         }
         setVerificationError(null);
         setCheckingStatus(false);
-        setRetryCount(0);
       }
     });
     
@@ -143,40 +141,6 @@ const DiscordVerification = ({ isVerified, onVerificationChange }: DiscordVerifi
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-  
-  const handleRetryVerification = async () => {
-    setRetryCount(prev => prev + 1);
-    setCheckingStatus(true);
-    setVerificationError(null);
-    
-    try {
-      console.log(`Retrying Discord verification (attempt ${retryCount + 1})`);
-      const { verified, message } = await checkDiscordVerification();
-      console.log("Retry verification result:", verified, message);
-      
-      if (!verified && message.includes("join")) {
-        setVerificationError(message);
-      } else if (!verified && message.includes("Error")) {
-        setVerificationError("Still unable to verify. Please ensure you're in the Discord server and try signing out and back in.");
-      }
-      
-      if (onVerificationChange) {
-        onVerificationChange(verified);
-      }
-      
-      if (verified) {
-        toast({
-          title: "Success",
-          description: "Discord verification successful!",
-        });
-      }
-    } catch (err) {
-      console.error("Retry verification error:", err);
-      setVerificationError("Retry failed. Please check your connection.");
-    } finally {
-      setCheckingStatus(false);
     }
   };
   
@@ -236,19 +200,6 @@ const DiscordVerification = ({ isVerified, onVerificationChange }: DiscordVerifi
                       Click here to join the server
                       <ExternalLink className="h-3 w-3 ml-1" />
                     </button>
-                  </div>
-                )}
-                {(verificationError.includes("Error") || verificationError.includes("Unable")) && (
-                  <div className="pt-1">
-                    <Button
-                      onClick={handleRetryVerification}
-                      variant="outline"
-                      size="sm"
-                      className="h-7 text-xs"
-                    >
-                      <RefreshCw className="h-3 w-3 mr-1" />
-                      Retry Check
-                    </Button>
                   </div>
                 )}
               </div>
