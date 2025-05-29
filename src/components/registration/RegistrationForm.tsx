@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { toast } from "@/hooks/use-toast";
 import { 
@@ -257,7 +258,7 @@ const RegistrationForm = () => {
           console.error('Full error details:', JSON.stringify(error, null, 2));
           throw error;
         }
-      } else {
+      } else if (data && data.id) {
         console.log('Registration successful, updating password usage...');
         // Increment the current_uses counter
         const { error: updateError } = await supabase
@@ -276,20 +277,28 @@ const RegistrationForm = () => {
           title: "Registration Successful",
           description: "Your wallet has been registered for the whitelist",
         });
+      } else {
+        throw new Error("Registration failed: No data returned");
       }
     } catch (error) {
       console.error('Registration error:', error);
       console.error('Error details:', JSON.stringify(error, null, 2));
       
-      // More specific error handling for mobile
+      // More specific error handling
       let errorMessage = "An error occurred during registration. Please try again.";
       
       if (error instanceof Error) {
         console.error('Error message:', error.message);
-        if (error.message.includes('network') || error.message.includes('fetch')) {
+        
+        // Don't show generic errors for successful registrations
+        if (error.message.includes('Registration failed: No data returned')) {
+          errorMessage = "Registration may have completed successfully. Please refresh and check if you're already registered.";
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
           errorMessage = "Network error. Please check your connection and try again.";
         } else if (error.message.includes('timeout')) {
           errorMessage = "Request timed out. Please try again.";
+        } else if (error.message.includes('AbortError')) {
+          errorMessage = "Request was interrupted. Please try again.";
         }
       }
       
