@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { toast } from "@/hooks/use-toast";
 import { 
@@ -209,11 +208,13 @@ const RegistrationForm = () => {
       
       console.log('Checking for existing registration...');
       // Check if wallet is already registered
-      const { data: existingRegistration } = await supabase
+      const { data: existingRegistration, error: existingError } = await supabase
         .from('whitelist_registrations')
         .select('id')
         .eq('wallet_address', walletAddress)
-        .single();
+        .maybeSingle();
+      
+      console.log('Existing registration check:', { existingRegistration, existingError });
       
       if (existingRegistration) {
         toast({
@@ -227,16 +228,22 @@ const RegistrationForm = () => {
       
       console.log('Inserting registration data...');
       // Insert registration data with actual password value and Discord username
+      const registrationData = {
+        wallet_address: walletAddress,
+        discord_username: discordUsername,
+        discord_verified: isDiscordVerified,
+        password_id: password // Store the actual password value instead of the UUID
+      };
+      
+      console.log('Registration data to insert:', registrationData);
+      
       const { data, error } = await supabase
         .from('whitelist_registrations')
-        .insert({
-          wallet_address: walletAddress,
-          discord_username: discordUsername,
-          discord_verified: isDiscordVerified,
-          password_id: password // Store the actual password value instead of the UUID
-        })
+        .insert(registrationData)
         .select('id')
         .single();
+      
+      console.log('Insert result:', { data, error });
       
       if (error) {
         console.error('Registration error:', error);
@@ -247,6 +254,7 @@ const RegistrationForm = () => {
             variant: "destructive",
           });
         } else {
+          console.error('Full error details:', JSON.stringify(error, null, 2));
           throw error;
         }
       } else {
@@ -271,9 +279,23 @@ const RegistrationForm = () => {
       }
     } catch (error) {
       console.error('Registration error:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      
+      // More specific error handling for mobile
+      let errorMessage = "An error occurred during registration. Please try again.";
+      
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = "Network error. Please check your connection and try again.";
+        } else if (error.message.includes('timeout')) {
+          errorMessage = "Request timed out. Please try again.";
+        }
+      }
+      
       toast({
         title: "Registration Failed",
-        description: "An error occurred during registration. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

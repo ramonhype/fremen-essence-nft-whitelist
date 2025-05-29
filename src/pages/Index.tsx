@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Layout from '@/components/layout/Layout';
 import RegistrationForm from '@/components/RegistrationForm';
@@ -20,11 +19,14 @@ const Index = () => {
                   by GAIB
                 </span>
               </h1>
-              <p className="mt-4 text-base md:text-lg text-black/80">
-                Register your wallet to join the whitelist for the Fremen Essence NFT.
-                <br className="hidden md:block" /><br className="hidden md:block" />
-                Participate in the Spice Harvest campaign to invest in AI onchain and the launch of AID, the first AI synthetic dollar, by GAIB.
-              </p>
+              <div className="mt-4 space-y-4 text-base md:text-lg text-black/80 text-left">
+                <p>
+                  Register your wallet to join the whitelist for the Fremen Essence NFT.
+                </p>
+                <p>
+                  Participate in the Spice Harvest campaign to invest in AI onchain and the launch of AID, the first AI synthetic dollar, by GAIB.
+                </p>
+              </div>
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
