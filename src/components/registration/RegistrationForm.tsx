@@ -128,59 +128,80 @@ const RegistrationForm = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const validateFormState = () => {
+    console.log('=== DETAILED FORM VALIDATION ===');
+    console.log('Wallet Address:', walletAddress);
+    console.log('Wallet Connected:', isConnected);
+    console.log('Password Valid:', isPasswordValid);
+    console.log('Password Value:', password ? '[HIDDEN]' : 'EMPTY');
+    console.log('X Verified:', isXVerified);
+    console.log('Discord Verified:', isDiscordVerified);
+    console.log('Discord Username:', discordUsername);
+    console.log('================================');
 
-    console.log('Starting registration submission...');
-    console.log('Form state:', {
-      walletAddress,
-      isPasswordValid,
-      isXVerified,
-      isDiscordVerified,
-      discordUsername,
-      password
-    });
+    const errors = [];
 
-    if (!walletAddress) {
-      toast({
-        title: "Wallet not connected",
-        description: "Please connect your wallet first",
-        variant: "destructive",
-      });
-      return;
+    if (!isConnected) {
+      errors.push("Wallet is not connected to the application");
+    }
+
+    if (!walletAddress || walletAddress.trim() === '') {
+      errors.push("Wallet address is empty or invalid");
     }
 
     if (!isPasswordValid) {
-      toast({
-        title: "Password not verified",
-        description: "Please verify your community password first",
-        variant: "destructive",
-      });
-      return;
+      errors.push("Community password has not been verified successfully");
+    }
+
+    if (!password || password.trim() === '') {
+      errors.push("Community password is empty");
     }
 
     if (!isXVerified) {
+      errors.push("X (Twitter) account verification is incomplete - you must follow @gaib_ai");
+    }
+
+    if (!isDiscordVerified) {
+      errors.push("Discord verification is incomplete - you must join the Discord server and verify membership");
+    }
+
+    if (!discordUsername || discordUsername.trim() === '') {
+      errors.push("Discord username is missing - Discord verification may have failed");
+    }
+
+    return errors;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    console.log('🚀 Starting registration submission...');
+    
+    // Detailed validation with specific error messages
+    const validationErrors = validateFormState();
+    
+    if (validationErrors.length > 0) {
+      console.error('❌ Form validation failed:', validationErrors);
+      
+      const errorMessage = validationErrors.length === 1 
+        ? validationErrors[0]
+        : `Multiple issues found:\n• ${validationErrors.join('\n• ')}`;
+      
       toast({
-        title: "X not verified",
-        description: "Please follow us on X first",
+        title: "Registration Failed - Validation Error",
+        description: errorMessage,
         variant: "destructive",
       });
       return;
     }
 
-    if (!isDiscordVerified) {
-      toast({
-        title: "Discord not verified",
-        description: "Please verify your Discord membership first",
-        variant: "destructive",
-      });
-      return;
-    }
+    console.log('✅ Form validation passed, proceeding with registration...');
 
     setIsLoading(true);
     
     try {
-      console.log('Checking password data...');
+      console.log('🔍 Step 1: Checking password data...');
+      
       // Get password data and check max_uses again as a safety measure
       const { data: passwordData, error: passwordError } = await supabase
         .from('community_passwords')
@@ -189,45 +210,63 @@ const RegistrationForm = () => {
         .eq('active', true)
         .single();
       
-      if (passwordError || !passwordData) {
-        console.error('Password error:', passwordError);
-        throw new Error("Password not found or inactive");
+      if (passwordError) {
+        console.error('❌ Password query error:', passwordError);
+        throw new Error(`Password verification failed: ${passwordError.message || 'Password not found or inactive'}`);
       }
       
-      console.log('Password data:', passwordData);
+      if (!passwordData) {
+        console.error('❌ No password data returned');
+        throw new Error("Password not found in database - the password may be invalid or inactive");
+      }
+      
+      console.log('📊 Password data retrieved:', {
+        id: passwordData.id,
+        maxUses: passwordData.max_uses,
+        currentUses: passwordData.current_uses,
+        active: passwordData.active
+      });
       
       // Double-check if usage limit has been reached
       if (passwordData.max_uses !== null && passwordData.current_uses >= passwordData.max_uses) {
+        console.error('❌ Password usage limit reached');
         toast({
-          title: "Registration Failed",
-          description: "This password has reached its maximum usage limit",
+          title: "Registration Failed - Password Limit Reached",
+          description: `This password has reached its maximum usage limit (${passwordData.current_uses}/${passwordData.max_uses} uses)`,
           variant: "destructive",
         });
         setIsLoading(false);
         return;
       }
       
-      console.log('Checking for existing registration...');
+      console.log('🔍 Step 2: Checking for existing registration...');
+      
       // Check if wallet is already registered
       const { data: existingRegistration, error: existingError } = await supabase
         .from('whitelist_registrations')
-        .select('id')
+        .select('id, wallet_address, discord_username, created_at')
         .eq('wallet_address', walletAddress)
         .maybeSingle();
       
-      console.log('Existing registration check:', { existingRegistration, existingError });
+      if (existingError) {
+        console.error('❌ Error checking existing registration:', existingError);
+        throw new Error(`Database error when checking existing registrations: ${existingError.message}`);
+      }
       
       if (existingRegistration) {
+        console.error('❌ Wallet already registered:', existingRegistration);
         toast({
-          title: "Already Registered",
-          description: "This wallet address is already registered",
+          title: "Registration Failed - Already Registered",
+          description: `This wallet address (${walletAddress}) is already registered on ${new Date(existingRegistration.created_at).toLocaleDateString()}`,
           variant: "destructive",
         });
         setIsLoading(false);
         return;
       }
       
-      console.log('Inserting registration data...');
+      console.log('✅ No existing registration found, proceeding...');
+      console.log('📝 Step 3: Preparing registration data...');
+      
       // Insert registration data with actual password value and Discord username
       const registrationData = {
         wallet_address: walletAddress,
@@ -236,7 +275,14 @@ const RegistrationForm = () => {
         password_id: password // Store the actual password value instead of the UUID
       };
       
-      console.log('Registration data to insert:', registrationData);
+      console.log('📋 Registration data prepared:', {
+        wallet_address: registrationData.wallet_address,
+        discord_username: registrationData.discord_username,
+        discord_verified: registrationData.discord_verified,
+        password_id: '[HIDDEN]'
+      });
+      
+      console.log('💾 Step 4: Inserting registration into database...');
       
       const { data, error } = await supabase
         .from('whitelist_registrations')
@@ -244,66 +290,102 @@ const RegistrationForm = () => {
         .select('id')
         .single();
       
-      console.log('Insert result:', { data, error });
-      
       if (error) {
-        console.error('Registration error:', error);
+        console.error('❌ Registration insert error:', error);
+        
         if (error.code === '23505') { // Unique violation
           toast({
-            title: "Already Registered",
-            description: "This wallet address is already registered",
+            title: "Registration Failed - Duplicate Entry",
+            description: "This wallet address is already registered (unique constraint violation)",
+            variant: "destructive",
+          });
+        } else if (error.code === '23503') { // Foreign key violation
+          toast({
+            title: "Registration Failed - Invalid Reference",
+            description: "The provided password or Discord information is invalid (foreign key constraint)",
+            variant: "destructive",
+          });
+        } else if (error.code === '23514') { // Check constraint violation
+          toast({
+            title: "Registration Failed - Data Validation",
+            description: `Data validation failed: ${error.message}`,
             variant: "destructive",
           });
         } else {
-          console.error('Full error details:', JSON.stringify(error, null, 2));
-          throw error;
-        }
-      } else if (data && data.id) {
-        console.log('Registration successful, updating password usage...');
-        // Increment the current_uses counter
-        const { error: updateError } = await supabase
-          .from('community_passwords')
-          .update({ current_uses: passwordData.current_uses + 1 })
-          .eq('id', passwordData.id);
-        
-        if (updateError) {
-          console.error('Error updating password usage:', updateError);
-          // Log the error but don't fail the registration since it's already complete
+          toast({
+            title: "Registration Failed - Database Error",
+            description: `Database error (${error.code}): ${error.message}`,
+            variant: "destructive",
+          });
         }
         
-        setRegistrationId(data.id);
-        console.log('Registration completed successfully');
-        toast({
-          title: "Registration Successful",
-          description: "Your wallet has been registered for the whitelist",
-        });
-      } else {
-        throw new Error("Registration failed: No data returned");
+        throw error;
       }
-    } catch (error) {
-      console.error('Registration error:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
       
-      // More specific error handling
-      let errorMessage = "An error occurred during registration. Please try again.";
+      if (!data || !data.id) {
+        console.error('❌ No data returned from registration insert');
+        throw new Error("Registration insert succeeded but no ID was returned - this may indicate a database issue");
+      }
+      
+      console.log('✅ Registration successfully inserted with ID:', data.id);
+      console.log('📈 Step 5: Updating password usage counter...');
+      
+      // Increment the current_uses counter
+      const { error: updateError } = await supabase
+        .from('community_passwords')
+        .update({ current_uses: passwordData.current_uses + 1 })
+        .eq('id', passwordData.id);
+      
+      if (updateError) {
+        console.error('⚠️ Error updating password usage (registration still succeeded):', updateError);
+        // Log the error but don't fail the registration since it's already complete
+      } else {
+        console.log('✅ Password usage counter updated successfully');
+      }
+      
+      setRegistrationId(data.id);
+      console.log('🎉 Registration completed successfully!');
+      
+      toast({
+        title: "Registration Successful! 🎉",
+        description: `Your wallet (${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}) has been successfully registered for the whitelist`,
+      });
+      
+    } catch (error) {
+      console.error('💥 Registration error:', error);
+      
+      let errorMessage = "An unexpected error occurred during registration. Please try again.";
+      let errorTitle = "Registration Failed";
       
       if (error instanceof Error) {
-        console.error('Error message:', error.message);
+        console.error('📝 Error details:', {
+          message: error.message,
+          name: error.name,
+          stack: error.stack
+        });
         
-        // Don't show generic errors for successful registrations
-        if (error.message.includes('Registration failed: No data returned')) {
-          errorMessage = "Registration may have completed successfully. Please refresh and check if you're already registered.";
-        } else if (error.message.includes('network') || error.message.includes('fetch')) {
-          errorMessage = "Network error. Please check your connection and try again.";
+        if (error.message.includes('fetch')) {
+          errorTitle = "Network Error";
+          errorMessage = "Unable to connect to the server. Please check your internet connection and try again.";
         } else if (error.message.includes('timeout')) {
-          errorMessage = "Request timed out. Please try again.";
+          errorTitle = "Request Timeout";
+          errorMessage = "The request timed out. Please try again.";
         } else if (error.message.includes('AbortError')) {
-          errorMessage = "Request was interrupted. Please try again.";
+          errorTitle = "Request Interrupted";
+          errorMessage = "The request was interrupted. Please try again.";
+        } else if (error.message.includes('Password verification failed')) {
+          errorTitle = "Password Error";
+          errorMessage = error.message;
+        } else if (error.message.includes('Database error')) {
+          errorTitle = "Database Error";
+          errorMessage = error.message;
+        } else if (error.message.length > 0) {
+          errorMessage = error.message;
         }
       }
       
       toast({
-        title: "Registration Failed",
+        title: errorTitle,
         description: errorMessage,
         variant: "destructive",
       });
