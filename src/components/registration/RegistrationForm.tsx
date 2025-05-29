@@ -39,6 +39,14 @@ const RegistrationForm = () => {
       setWalletAddress('');
     }
   }, [address, isConnected]);
+
+  // Check for X verification persistence on mount
+  useEffect(() => {
+    const savedXVerification = localStorage.getItem('xVerified');
+    if (savedXVerification === 'true') {
+      setIsXVerified(true);
+    }
+  }, []);
   
   // Check for Discord verification on mount and auth state changes
   useEffect(() => {
@@ -113,8 +121,25 @@ const RegistrationForm = () => {
     setWalletAddress(address);
   };
 
+  const handleXVerificationChange = (verified: boolean) => {
+    setIsXVerified(verified);
+    if (verified) {
+      localStorage.setItem('xVerified', 'true');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    console.log('Starting registration submission...');
+    console.log('Form state:', {
+      walletAddress,
+      isPasswordValid,
+      isXVerified,
+      isDiscordVerified,
+      discordUsername,
+      password
+    });
 
     if (!walletAddress) {
       toast({
@@ -155,6 +180,7 @@ const RegistrationForm = () => {
     setIsLoading(true);
     
     try {
+      console.log('Checking password data...');
       // Get password data and check max_uses again as a safety measure
       const { data: passwordData, error: passwordError } = await supabase
         .from('community_passwords')
@@ -168,6 +194,8 @@ const RegistrationForm = () => {
         throw new Error("Password not found or inactive");
       }
       
+      console.log('Password data:', passwordData);
+      
       // Double-check if usage limit has been reached
       if (passwordData.max_uses !== null && passwordData.current_uses >= passwordData.max_uses) {
         toast({
@@ -179,6 +207,7 @@ const RegistrationForm = () => {
         return;
       }
       
+      console.log('Checking for existing registration...');
       // Check if wallet is already registered
       const { data: existingRegistration } = await supabase
         .from('whitelist_registrations')
@@ -196,6 +225,7 @@ const RegistrationForm = () => {
         return;
       }
       
+      console.log('Inserting registration data...');
       // Insert registration data with actual password value and Discord username
       const { data, error } = await supabase
         .from('whitelist_registrations')
@@ -220,6 +250,7 @@ const RegistrationForm = () => {
           throw error;
         }
       } else {
+        console.log('Registration successful, updating password usage...');
         // Increment the current_uses counter
         const { error: updateError } = await supabase
           .from('community_passwords')
@@ -232,6 +263,7 @@ const RegistrationForm = () => {
         }
         
         setRegistrationId(data.id);
+        console.log('Registration completed successfully');
         toast({
           title: "Registration Successful",
           description: "Your wallet has been registered for the whitelist",
@@ -250,19 +282,19 @@ const RegistrationForm = () => {
   };
 
   return (
-    <Card className="w-full max-w-md border border-white/10 bg-white/5 backdrop-blur-md text-white shadow-lg">
-      <CardHeader>
-        <CardTitle className="text-2xl text-white">Whitelist Registration</CardTitle>
-        <CardDescription className="text-white/80">Register your wallet for our upcoming NFT mint</CardDescription>
+    <Card className="w-full max-w-md border border-white/10 bg-white/5 backdrop-blur-md text-white shadow-lg mx-auto">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-xl md:text-2xl text-white">Whitelist Registration</CardTitle>
+        <CardDescription className="text-white/80 text-sm md:text-base">Register your wallet for our upcoming NFT mint</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-4 md:px-6">
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <WalletDisplay onWalletChange={handleWalletChange} />
 
             <XVerification 
               isVerified={isXVerified}
-              onVerificationChange={setIsXVerified}
+              onVerificationChange={handleXVerificationChange}
             />
 
             <DiscordVerification 
@@ -278,7 +310,7 @@ const RegistrationForm = () => {
           <div className="mt-6">
             <Button 
               type="submit" 
-              className="w-full bg-[#19E3E3] hover:bg-[#19E3E3]/80 text-white transition-colors"
+              className="w-full bg-[#19E3E3] hover:bg-[#19E3E3]/80 text-white transition-colors py-3 text-sm md:text-base"
               disabled={!isPasswordValid || isLoading || !isDiscordVerified || !isXVerified || !walletAddress}
             >
               {isLoading ? (
