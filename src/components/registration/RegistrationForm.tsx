@@ -267,19 +267,19 @@ const RegistrationForm = () => {
       console.log('✅ No existing registration found, proceeding...');
       console.log('📝 Step 3: Preparing registration data...');
       
-      // Insert registration data with actual password value and Discord username
+      // Insert registration data with the correct password ID (UUID from the database)
       const registrationData = {
         wallet_address: walletAddress,
         discord_username: discordUsername,
         discord_verified: isDiscordVerified,
-        password_id: password // Store the actual password value instead of the UUID
+        password_id: passwordData.id // Use the UUID from the password table, not the password string
       };
       
       console.log('📋 Registration data prepared:', {
         wallet_address: registrationData.wallet_address,
         discord_username: registrationData.discord_username,
         discord_verified: registrationData.discord_verified,
-        password_id: '[HIDDEN]'
+        password_id: registrationData.password_id
       });
       
       console.log('💾 Step 4: Inserting registration into database...');
