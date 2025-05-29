@@ -25,6 +25,7 @@ const RegistrationForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isXVerified, setIsXVerified] = useState(false);
   const [isDiscordVerified, setIsDiscordVerified] = useState(false);
+  const [discordUsername, setDiscordUsername] = useState<string>('');
   const [registrationId, setRegistrationId] = useState<string | null>(null);
   const [walletAddress, setWalletAddress] = useState<string>('');
   
@@ -46,12 +47,13 @@ const RegistrationForm = () => {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.provider_token) {
-          const { verified } = await checkDiscordVerification();
+          const { verified, username } = await checkDiscordVerification();
           setIsDiscordVerified(verified);
+          setDiscordUsername(username || '');
           
           // If there's a registration ID and verification was successful, update it
-          if (registrationId && verified) {
-            await updateDiscordVerificationStatus(registrationId, true);
+          if (registrationId && verified && username) {
+            await updateDiscordVerificationStatus(registrationId, true, username);
           }
           
           if (verified) {
@@ -74,8 +76,9 @@ const RegistrationForm = () => {
         if (event === 'SIGNED_IN' && session?.provider_token) {
           // Use setTimeout to avoid Supabase auth deadlock
           setTimeout(async () => {
-            const { verified } = await checkDiscordVerification();
+            const { verified, username } = await checkDiscordVerification();
             setIsDiscordVerified(verified);
+            setDiscordUsername(username || '');
             
             if (verified) {
               toast({
@@ -84,13 +87,14 @@ const RegistrationForm = () => {
               });
               
               // If there's a registration ID, update it
-              if (registrationId) {
-                await updateDiscordVerificationStatus(registrationId, true);
+              if (registrationId && username) {
+                await updateDiscordVerificationStatus(registrationId, true, username);
               }
             }
           }, 0);
         } else if (event === 'SIGNED_OUT') {
           setIsDiscordVerified(false);
+          setDiscordUsername('');
         }
       }
     );
@@ -192,15 +196,14 @@ const RegistrationForm = () => {
         return;
       }
       
-      // Insert registration data
+      // Insert registration data with actual password value and Discord username
       const { data, error } = await supabase
         .from('whitelist_registrations')
         .insert({
           wallet_address: walletAddress,
-          discord_username: "", // Empty string as we're using OAuth
+          discord_username: discordUsername,
           discord_verified: isDiscordVerified,
-          password_id: passwordData.id,
-          name: null
+          password_id: password // Store the actual password value instead of the UUID
         })
         .select('id')
         .single();

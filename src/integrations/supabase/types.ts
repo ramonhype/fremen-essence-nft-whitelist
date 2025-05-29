@@ -45,7 +45,6 @@ export type Database = {
           discord_username: string
           discord_verified: boolean
           id: string
-          name: string | null
           password_id: string | null
           wallet_address: string
         }
@@ -54,7 +53,6 @@ export type Database = {
           discord_username: string
           discord_verified?: boolean
           id?: string
-          name?: string | null
           password_id?: string | null
           wallet_address: string
         }
@@ -63,7 +61,6 @@ export type Database = {
           discord_username?: string
           discord_verified?: boolean
           id?: string
-          name?: string | null
           password_id?: string | null
           wallet_address?: string
         }
